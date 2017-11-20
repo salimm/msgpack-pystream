@@ -93,76 +93,88 @@ class ValueType(Enum):
 
 class Template():
     
-    def __init__(self, formattype, segmenttype, valuetype, length, multiplier):
+    def __init__(self, formattype, segmenttype, valuetype, startevent, endevent, length, multiplier):
         self.formattype = formattype
         self.segmenttype = segmenttype
         self.length = length
         self.valuetype = valuetype
         self.multiplier = multiplier
+        self.startevent = startevent
+        self.endevent = endevent
         
         
         
     def __str__(self):
-        return "{ format:" + str(self.formattype) + ", segment: " + str(self.segmenttype) + ", length: " + str(self.length) + ", multiplier: " + str(self.multiplier) + ", valuetype:" + str(self.valuetype) + "}"
+        return "{ format:" + str(self.formattype) + ", segment: " + str(self.segmenttype) + ", length: " + str(self.length) + ", multiplier: " + str(self.multiplier) + ", valuetype:" + str(self.valuetype) + ", startevent:" + str(self.startevent) + ", endevent:" + str(self.endevent) + "}"
     
         
-        
+
+class EventType(Enum):
+    
+    VALUE = 1
+    ARRAY_START = 2
+    ARRAY_END = 3
+    MAP_START = 4
+    MAP_END = 5
+    MAP_PROPERTY_NAME = 6
+    EXT = 7
+              
     
 class TemplateType(Enum):
     '''
     SegmentTemplate is an enum containing information required to parse segment. Each segement type contains an array of values with the following items:
         [FormatType, SegmentType, #value_bytes/#value_length_bytes, multiplier_of_length/#parts_per_item]
     '''
-    POS_FIXINT = Template(FormatType.POS_FIXINT, SegmentType.SINGLE_BYTE, ValueType.RAW, 0, 0)
-    NEG_FIXINT = Template(FormatType.NEG_FIXINT, SegmentType.SINGLE_BYTE, ValueType.RAW, 0, 0)
+    POS_FIXINT = Template(FormatType.POS_FIXINT, SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 0)
+    NEG_FIXINT = Template(FormatType.NEG_FIXINT, SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 0)
     
-    FIXMAP = Template(FormatType.FIXMAP, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR, ValueType.NESTED, 0, 2)
-    FIXARRAY = Template(FormatType.FIXARRAY, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR, ValueType.NESTED, 0, 1)
-    FIXSTR = Template(FormatType.FIXSTR, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR, ValueType.RAW, 0, 1)
+    FIXMAP = Template(FormatType.FIXMAP, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR, ValueType.NESTED, EventType.MAP_START, EventType.MAP_END, 0, 2)
+    FIXARRAY = Template(FormatType.FIXARRAY, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR, ValueType.NESTED, EventType.ARRAY_START, EventType.ARRAY_END, 0, 1)
+    FIXSTR = Template(FormatType.FIXSTR, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR, ValueType.RAW, None, None, 0, 1)
     
-    NIL = Template(FormatType.NIL , SegmentType.SINGLE_BYTE, ValueType.NONE, 0, 0)
-    NEVER_USED = Template(FormatType.NEVER_USED, SegmentType.SINGLE_BYTE, ValueType.NONE, 0, 0)
+    NIL = Template(FormatType.NIL , SegmentType.SINGLE_BYTE, ValueType.NONE, None, None, 0, 0)
+    NEVER_USED = Template(FormatType.NEVER_USED, SegmentType.SINGLE_BYTE, ValueType.NONE, None, None, 0, 0)
     
-    FALSE = Template(FormatType.FALSE , SegmentType.SINGLE_BYTE, ValueType.RAW, 0, 0)
-    TRUE = Template(FormatType.TRUE, SegmentType.SINGLE_BYTE, ValueType.RAW, 0, 0)
+    FALSE = Template(FormatType.FALSE , SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 0)
+    TRUE = Template(FormatType.TRUE, SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 0)
     
-    BIN_8 = Template(FormatType.BIN_8, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, 1, 1)
-    BIN_16 = Template(FormatType.BIN_16, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, 2, 1)
-    BIN_32 = Template(FormatType.BIN_32, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, 4, 1)
+    BIN_8 = Template(FormatType.BIN_8, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, None, None, 1, 1)
+    BIN_16 = Template(FormatType.BIN_16, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, None, None, 2, 1)
+    BIN_32 = Template(FormatType.BIN_32, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, None, None, 4, 1)
     
-    EXT_8 = Template(FormatType.EXT_8, SegmentType.EXT_FORMAT, ValueType.RAW, 1, 1)
-    EXT_16 = Template(FormatType.EXT_16, SegmentType.EXT_FORMAT, ValueType.RAW, 2, 1)
-    EXT_32 = Template(FormatType.EXT_32, SegmentType.EXT_FORMAT, ValueType.RAW, 4, 1)
+    EXT_8 = Template(FormatType.EXT_8, SegmentType.EXT_FORMAT, ValueType.RAW, None, None, 1, 1)
+    EXT_16 = Template(FormatType.EXT_16, SegmentType.EXT_FORMAT, ValueType.RAW, None, None, 2, 1)
+    EXT_32 = Template(FormatType.EXT_32, SegmentType.EXT_FORMAT, ValueType.RAW, None, None, 4, 1)
     
     
-    FLOAT_32 = Template(FormatType.FLOAT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, 4, 0)
-    FLOAT_64 = Template(FormatType.FLOAT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, 8, 0)
+    FLOAT_32 = Template(FormatType.FLOAT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 4, 0)
+    FLOAT_64 = Template(FormatType.FLOAT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 8, 0)
     
-    UINT_8 = Template(FormatType.UINT_8, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, 1, 0)
-    UINT_16 = Template(FormatType.UINT_16, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, 2, 0)
-    UINT_32 = Template(FormatType.UINT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, 4, 0)
-    UINT_64 = Template(FormatType.UINT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, 8, 0)
+    UINT_8 = Template(FormatType.UINT_8, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 1, 0)
+    UINT_16 = Template(FormatType.UINT_16, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 2, 0)
+    UINT_32 = Template(FormatType.UINT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 4, 0)
+    UINT_64 = Template(FormatType.UINT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 8, 0)
     
-    INT_8 = Template(FormatType.INT_8, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, 1, 0)
-    INT_16 = Template(FormatType.INT_16, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, 2, 0)
-    INT_32 = Template(FormatType.INT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, 4, 0)
-    INT_64 = Template(FormatType.INT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, 8, 0)
+    INT_8 = Template(FormatType.INT_8, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 1, 0)
+    INT_16 = Template(FormatType.INT_16, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 2, 0)
+    INT_32 = Template(FormatType.INT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 4, 0)
+    INT_64 = Template(FormatType.INT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 8, 0)
     
-    FIXEXT_1 = Template(FormatType.FIXEXT_1, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, 1, 1)
-    FIXEXT_2 = Template(FormatType.FIXEXT_2, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, 2, 1)
-    FIXEXT_4 = Template(FormatType.FIXEXT_4, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, 4, 1)
-    FIXEXT_8 = Template(FormatType.FIXEXT_8, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, 8, 1)
-    FIXEXT_16 = Template(FormatType.FIXEXT_16, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, 16, 1)
+    FIXEXT_1 = Template(FormatType.FIXEXT_1, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, None, None, 1, 1)
+    FIXEXT_2 = Template(FormatType.FIXEXT_2, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, None, None, 2, 1)
+    FIXEXT_4 = Template(FormatType.FIXEXT_4, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, None, None, 4, 1)
+    FIXEXT_8 = Template(FormatType.FIXEXT_8, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, None, None, 8, 1)
+    FIXEXT_16 = Template(FormatType.FIXEXT_16, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, None, None, 16, 1)
     
-    STR_8 = Template(FormatType.STR_8, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, 1, 1)
-    STR_16 = Template(FormatType.STR_16, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, 2, 1)
-    STR_32 = Template(FormatType.STR_32, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, 4, 1)
+    STR_8 = Template(FormatType.STR_8, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, None, None, 1, 1)
+    STR_16 = Template(FormatType.STR_16, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, None, None, 2, 1)
+    STR_32 = Template(FormatType.STR_32, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, None, None, 4, 1)
     
-    ARRAY_16 = Template(FormatType.ARRAY_16, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.NESTED, 2, 1)
-    ARRAY_32 = Template(FormatType.ARRAY_32, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.NESTED, 4, 1)
+    ARRAY_16 = Template(FormatType.ARRAY_16, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.NESTED, EventType.ARRAY_START, EventType.ARRAY_END, 2, 1)
+    ARRAY_32 = Template(FormatType.ARRAY_32, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.NESTED, EventType.ARRAY_START, EventType.ARRAY_END, 4, 1)
     
-    MAP_16 = Template(FormatType.MAP_16, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.NESTED, 2, 2)
-    MAP_32 = Template(FormatType.MAP_32, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.NESTED, 4, 2)
+    MAP_16 = Template(FormatType.MAP_16, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.NESTED, EventType.MAP_START, EventType.MAP_END, 2, 2)
+    MAP_32 = Template(FormatType.MAP_32, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.NESTED, EventType.MAP_START, EventType.MAP_END, 4, 2)
     
 
 
@@ -274,6 +286,8 @@ class FormatUtil():
         return self._templatemap[code]
             
             
-    
+            
+            
+
     
     

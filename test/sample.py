@@ -21,7 +21,7 @@ a = []
 for i in range(100):
     a.append([1, 2, 3, [2, "as"]])
     
-m = {"f1":1, "f2":2}
+m = {"f1":1, "f2":{"f2-1":1}}
 bdata = msgpack.packb(m)
 # f.close()
  

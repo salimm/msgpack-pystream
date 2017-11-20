@@ -6,7 +6,8 @@ Created on Nov 13, 2017
 from _pyio import __metaclass__
 from abc import ABCMeta, abstractmethod
 from enum import Enum
-from msgpackstream.format import FormatUtil, SegmentType, FormatType, ValueType
+from msgpackstream.format import FormatUtil, SegmentType, FormatType, ValueType, \
+    EventType
 from msgpackstream.errors import InvalidStateException
 from _io import BytesIO
 
@@ -41,28 +42,30 @@ class StreamUnpacker():
             byte = ord(byte)
             print(hex(byte))
             
-            event = None
+#             event = None
             if self._scstate in [ScannerState.IDLE, ScannerState.WAITING_FOR_HEADER]:                
-                event = self.handle_read_header(byte)
+#                 event = self.handle_read_header(byte)
+                self.handle_read_header(byte)
                 self.lastidx = idx + 1
             elif self._scstate is ScannerState.WAITING_FOR_LENGTH:
                 self._state.remaining -= 1;  # decrease number of remaining bytes to get length
                 if(self._state.remaining == 0):  # if no more bytes remaining
                     self.handle_read_length(self.memory, self.lastidx, idx + 1)
-                    self.lastidx = idx +1
+                    self.lastidx = idx + 1
             elif self._scstate is ScannerState.WAITING_FOR_VALUE:
                 self._state.remaining -= 1;                
                 if(self._state.remaining == 0):
-                    event = self.handle_read_value(self.memory, self.lastidx, idx + 1)
-                    self.lastidx = idx +1
+#                     event = self.handle_read_value(self.memory, self.lastidx, idx + 1)
+                    self.handle_read_value(self.memory, self.lastidx, idx + 1)
+                    self.lastidx = idx + 1
             elif self._scstate is ScannerState.WAITING_FOR_EXT_TYPE:
                 pass            
             
             if self._scstate is ScannerState.SEGMENT_ENDED:
                 self.handle_segment_ended()
             
-            if event is not None:
-                self.events.append(event)
+#             if event is not None:
+#                 self.events.append(event)
             
             idx = idx + 1
             byte = self.memory.read(1)
@@ -76,7 +79,7 @@ class StreamUnpacker():
         
     
     def handle_read_length(self, buff, start, end):        
-        self._state.length = self.parse_int(buff, start, end)
+        self._state.length = self.parse_int(buff, start, end) * self._state.template.value.multiplier
     
         if self.current_state().template.value.valuetype is ValueType.NESTED:
             self.push_state()
@@ -91,10 +94,10 @@ class StreamUnpacker():
         if segmenttype in [SegmentType.HEADER_VALUE_PAIR, SegmentType.VARIABLE_LENGTH_VALUE, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR]:
             self._scstate = ScannerState.SEGMENT_ENDED
             value = self.parse_value(self._state.formattype, buff, start, end)
-            return (self.prefix, EventType.VALUE, self._state.formattype, value)
+            self.events.append((self.prefix, EventType.VALUE, self._state.formattype, value))
         # next we should expect length
         elif segmenttype in [SegmentType.FIXED_EXT_FORMAT, SegmentType.EXT_FORMAT]:
-            return (self.prefix, EventType.EXT, self._state.formattype, buff[start:end])
+            self.events.append((self.prefix, EventType.EXT, self._state.formattype, buff[start:end]))
         else:
             raise InvalidStateException(self._scstate, "header")
                   
@@ -110,15 +113,16 @@ class StreamUnpacker():
         if segmenttype is SegmentType.SINGLE_BYTE:
             self._scstate = ScannerState.SEGMENT_ENDED
             self._state = ParserState(frmt, template, isdone=True);
-            return (self.prefix, EventType.VALUE, frmt, self.util.get_value(byte, frmt))
+            self.events.append((self.prefix, EventType.VALUE, frmt, self.util.get_value(byte, frmt)))
         # next we should expect value
         elif segmenttype is SegmentType.HEADER_VALUE_PAIR:
             self._scstate = ScannerState.WAITING_FOR_VALUE
-            self._state = ParserState(frmt, template, length=template.value.length , isdone=False);            
+            self._state = ParserState(frmt, template, length=template.value.length * template.value.multiplier , isdone=False);            
         # next we should expect value
         elif segmenttype is SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR:
-            self._state = ParserState(frmt, template, length=self.util.get_value(byte, frmt) , isdone=False);
+            self._state = ParserState(frmt, template, length=self.util.get_value(byte, frmt) * template.value.multiplier , isdone=False);
             if self._state.template.value.valuetype is ValueType.NESTED:
+                self.events.append((self.prefix, self._state.template.value.startevent, frmt, None))
                 self.push_state()
                 self._scstate = ScannerState.WAITING_FOR_HEADER
             else:                
@@ -137,22 +141,27 @@ class StreamUnpacker():
         else:
             raise InvalidStateException(self._scstate, "header")
         
-    def handle_segment_ended(self):                           
-        print(self._scstate)
-        print(self._state)
+    def handle_segment_ended(self):
+                                   
+        print("===" + str(self._scstate))
+        print("===" + str(self._state))
         
+        if self._state.template.value.endevent is not None:
+            print("++++" + str(self._state.template.value))
+            self.events.append((self.prefix, self._state.template.value.endevent, self._state.formattype, None))
+             
         if(len(self._stack) is  0):
-            self._scstate = ScannerState.IDLE
+            self._scstate = ScannerState.IDLE            
             return         
         self.pop_state()
-        self._state.remaining = self._state.remaining -1
-        print(self._state)
-        if self._state.remaining == 0:
+        self._state.remaining = self._state.remaining - 1
+        if self._state.remaining is 0:
             self._scstate = ScannerState.SEGMENT_ENDED
             self.handle_segment_ended()
         else:
             self._scstate = ScannerState.WAITING_FOR_HEADER
             self.push_state()
+        
     
     def push_state(self):
         self._stack.append(self._state)
@@ -194,20 +203,6 @@ class StreamUnpacker():
     
     
 
-class EventType(Enum):
-    
-    VALUE = 1
-    STR_START = 2
-    STR_END = 3
-    BIN_START = 4
-    BIN_END = 5
-    ARRAY_START = 6
-    ARRAY_END = 7
-    MAP_START = 8
-    MAP_END = 9
-    MAP_PROPERTY_NAME = 10
-    EXT = 11  
-    
     
 class ParserState():
     
@@ -215,7 +210,7 @@ class ParserState():
             self.formattype = formattype
             self.template = template
             self._length = length
-            self.remaining = length
+            self.remaining = length 
             self.isdone = isdone
             
             

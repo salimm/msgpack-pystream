@@ -18,11 +18,11 @@ for i in range(10):
     s = s + "salam salam salam salam salam salam" 
 
 a = []
-for i in range(100):
+for i in range(2):
     a.append([1, 2, 3, [2, "as"]])
     
 m = {"f1":1, "f2":{"f2-1":1}}
-bdata = msgpack.packb(m)
+bdata = msgpack.packb(a)
 # f.close()
  
 buf = BytesIO()

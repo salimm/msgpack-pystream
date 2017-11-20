@@ -3,9 +3,13 @@ Created on Nov 14, 2017
 
 @author: Salim
 '''
-from _io import BytesIO
+from _io import BytesIO, StringIO
 import msgpack
 from msgpackstream.stream import StreamUnpacker
+import ijson
+import json
+
+
 
 idx = 2
 
@@ -14,16 +18,25 @@ idx = 2
     
 # bdata =  msgpack.packb({"test":1})
 s = ""
-for i in range(10):
+for i in range(1):
     s = s + "salam salam salam salam salam salam" 
 
 a = []
 for i in range(2):
-    a.append([1, 2, 3, [2, "as"]])
+    a.append([1.2, 2, 3, [2, "as",{"field": [1,2]}]])
     
-m = {"f1":1, "f2":{"f2-1":1}}
-bdata = msgpack.packb(a)
-# f.close()
+m = {"f1":s, "f2":a}
+
+buf = StringIO()
+buf.write(json.dumps(m).decode('ascii'))
+buf.seek(0)
+parser = ijson.parse(buf)
+
+for prefix, event, value in parser:
+    print((prefix, event,value))
+
+
+bdata = msgpack.packb(m)
  
 buf = BytesIO()
 buf.write(bdata)

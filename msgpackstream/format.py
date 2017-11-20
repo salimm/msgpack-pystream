@@ -95,12 +95,12 @@ class Template():
     
     def __init__(self, formattype, segmenttype, valuetype, startevent, endevent, length, multiplier):
         self.formattype = formattype
-        self.segmenttype = segmenttype
-        self.length = length
+        self.segmenttype = segmenttype        
         self.valuetype = valuetype
-        self.multiplier = multiplier
         self.startevent = startevent
-        self.endevent = endevent
+        self.endevent = endevent        
+        self.length = length
+        self.multiplier = multiplier
         
         
         
@@ -125,18 +125,18 @@ class TemplateType(Enum):
     SegmentTemplate is an enum containing information required to parse segment. Each segement type contains an array of values with the following items:
         [FormatType, SegmentType, #value_bytes/#value_length_bytes, multiplier_of_length/#parts_per_item]
     '''
-    POS_FIXINT = Template(FormatType.POS_FIXINT, SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 0)
-    NEG_FIXINT = Template(FormatType.NEG_FIXINT, SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 0)
+    POS_FIXINT = Template(FormatType.POS_FIXINT, SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 1)
+    NEG_FIXINT = Template(FormatType.NEG_FIXINT, SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 1)
     
     FIXMAP = Template(FormatType.FIXMAP, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR, ValueType.NESTED, EventType.MAP_START, EventType.MAP_END, 0, 2)
     FIXARRAY = Template(FormatType.FIXARRAY, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR, ValueType.NESTED, EventType.ARRAY_START, EventType.ARRAY_END, 0, 1)
     FIXSTR = Template(FormatType.FIXSTR, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR, ValueType.RAW, None, None, 0, 1)
     
-    NIL = Template(FormatType.NIL , SegmentType.SINGLE_BYTE, ValueType.NONE, None, None, 0, 0)
-    NEVER_USED = Template(FormatType.NEVER_USED, SegmentType.SINGLE_BYTE, ValueType.NONE, None, None, 0, 0)
+    NIL = Template(FormatType.NIL , SegmentType.SINGLE_BYTE, ValueType.NONE, None, None, 0, 1)
+    NEVER_USED = Template(FormatType.NEVER_USED, SegmentType.SINGLE_BYTE, ValueType.NONE, None, None, 0, 1)
     
-    FALSE = Template(FormatType.FALSE , SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 0)
-    TRUE = Template(FormatType.TRUE, SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 0)
+    FALSE = Template(FormatType.FALSE , SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 1)
+    TRUE = Template(FormatType.TRUE, SegmentType.SINGLE_BYTE, ValueType.RAW, None, None, 0, 1)
     
     BIN_8 = Template(FormatType.BIN_8, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, None, None, 1, 1)
     BIN_16 = Template(FormatType.BIN_16, SegmentType.VARIABLE_LENGTH_VALUE, ValueType.RAW, None, None, 2, 1)
@@ -147,18 +147,18 @@ class TemplateType(Enum):
     EXT_32 = Template(FormatType.EXT_32, SegmentType.EXT_FORMAT, ValueType.RAW, None, None, 4, 1)
     
     
-    FLOAT_32 = Template(FormatType.FLOAT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 4, 0)
-    FLOAT_64 = Template(FormatType.FLOAT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 8, 0)
+    FLOAT_32 = Template(FormatType.FLOAT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 4, 1)
+    FLOAT_64 = Template(FormatType.FLOAT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 8, 1)
     
-    UINT_8 = Template(FormatType.UINT_8, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 1, 0)
-    UINT_16 = Template(FormatType.UINT_16, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 2, 0)
-    UINT_32 = Template(FormatType.UINT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 4, 0)
-    UINT_64 = Template(FormatType.UINT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 8, 0)
+    UINT_8 = Template(FormatType.UINT_8, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 1, 1)
+    UINT_16 = Template(FormatType.UINT_16, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 2, 1)
+    UINT_32 = Template(FormatType.UINT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 4, 1)
+    UINT_64 = Template(FormatType.UINT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 8, 1)
     
-    INT_8 = Template(FormatType.INT_8, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 1, 0)
-    INT_16 = Template(FormatType.INT_16, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 2, 0)
-    INT_32 = Template(FormatType.INT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 4, 0)
-    INT_64 = Template(FormatType.INT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 8, 0)
+    INT_8 = Template(FormatType.INT_8, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 1, 1)
+    INT_16 = Template(FormatType.INT_16, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 2, 1)
+    INT_32 = Template(FormatType.INT_32, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 4, 1)
+    INT_64 = Template(FormatType.INT_64, SegmentType.HEADER_VALUE_PAIR, ValueType.RAW, None, None, 8, 1)
     
     FIXEXT_1 = Template(FormatType.FIXEXT_1, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, None, None, 1, 1)
     FIXEXT_2 = Template(FormatType.FIXEXT_2, SegmentType.FIXED_EXT_FORMAT, ValueType.RAW, None, None, 2, 1)
@@ -267,14 +267,16 @@ class FormatUtil():
     
     
     def get_value(self, code, ftype=None):
+        if(ftype is None):
+            ftype = self.find(code)
         if(ftype is FormatType.NIL):
             return None
         if(ftype is FormatType.FALSE):
             return False
         if(ftype is FormatType.TRUE):
             return True        
-        if(ftype is None):
-            ftype = self.find(code)        
+        if(ftype is FormatType.NEG_FIXINT):
+            return self.twos_comp(code & ~ftype.value.mask,5)
         return code & ~ftype.value.mask
         
     def find(self, code):
@@ -284,6 +286,11 @@ class FormatUtil():
     
     def find_template(self, code):
         return self._templatemap[code]
+    
+    def twos_comp(self, val, bits):
+        if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
+            val = val - (1 << bits)  # compute negative value
+        return val  
             
             
             

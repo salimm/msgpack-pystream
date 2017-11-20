@@ -17,17 +17,19 @@ s = ""
 for i in range(10):
     s = s + "salam salam salam salam salam salam" 
 
-a= []
+a = []
 for i in range(100):
-    a.append(i)
-bdata =  msgpack.packb(a)
+    a.append([1, 2, 3, [2, "as"]])
+    
+m = {"f1":1, "f2":2}
+bdata = msgpack.packb(m)
 # f.close()
  
 buf = BytesIO()
 buf.write(bdata)
 buf.seek(0)
 
-unpacker= StreamUnpacker();
+unpacker = StreamUnpacker();
 try:
     bytes_read = buf.read(10)
     while bytes_read:

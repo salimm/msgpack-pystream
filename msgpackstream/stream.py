@@ -50,8 +50,6 @@ class StreamUnpacker():
                 if(self._state.remaining == 0):  # if no more bytes remaining
                     self.handle_read_length(self.memory, self.lastidx, idx + 1)
                     self.lastidx = idx +1
-                    if self._state.template.value.valuetype is ValueType.NESTED:
-                        self.push_state()
             elif self._scstate is ScannerState.WAITING_FOR_VALUE:
                 self._state.remaining -= 1;                
                 if(self._state.remaining == 0):
@@ -81,8 +79,8 @@ class StreamUnpacker():
         self._state.length = self.parse_int(buff, start, end)
     
         if self.current_state().template.value.valuetype is ValueType.NESTED:
-            self._scstate = ScannerState.WAITING_FOR_HEADER
             self.push_state()
+            self._scstate = ScannerState.WAITING_FOR_HEADER
         else:
             self._scstate = ScannerState.WAITING_FOR_VALUE    
         
@@ -142,7 +140,6 @@ class StreamUnpacker():
     def handle_segment_ended(self):                           
         print(self._scstate)
         print(self._state)
-        print(self._stack)
         
         if(len(self._stack) is  0):
             self._scstate = ScannerState.IDLE

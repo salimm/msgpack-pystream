@@ -6,7 +6,6 @@ Created on Nov 13, 2017
 from _pyio import __metaclass__
 from abc import ABCMeta, abstractmethod
 from enum import Enum
-import struct
 from msgpackstream.format import FormatUtil, SegmentType, FormatType, ValueType
 from msgpackstream.errors import InvalidStateException
 from _io import BytesIO
@@ -75,18 +74,7 @@ class StreamUnpacker():
         if self.lastidx is idx:
             self.memory = BytesIO()
             self.lastidx = 0
-    
-    def handle_segment_ended(self):                           
-        print(self._scstate)
-        if(len(self._stack) == 0):
-            self._scstate = ScannerState.IDLE
-            return 
-        self._scstate = ScannerState.WAITING_FOR_HEADER
-        self.pop_state()
-        
-        if self._state.remaining == 0:
-            self.handle_segment_ended()
-            
+                
         
     
     def handle_read_length(self, buff, start, end):        
@@ -133,6 +121,7 @@ class StreamUnpacker():
         elif segmenttype is SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR:
             self._state = ParserState(frmt, template, length=self.util.get_value(byte, frmt) , isdone=False);
             if self._state.template.value.valuetype is ValueType.NESTED:
+                self.push_state()
                 self._scstate = ScannerState.WAITING_FOR_HEADER
             else:                
                 self._scstate = ScannerState.WAITING_FOR_VALUE
@@ -150,25 +139,39 @@ class StreamUnpacker():
         else:
             raise InvalidStateException(self._scstate, "header")
         
+    def handle_segment_ended(self):                           
+        print(self._scstate)
+        print(self._state)
+        print(self._stack)
+        
+        if(len(self._stack) is  0):
+            self._scstate = ScannerState.IDLE
+            return         
+        self.pop_state()
+        self._state.remaining = self._state.remaining -1
+        print(self._state)
+        if self._state.remaining == 0:
+            self._scstate = ScannerState.SEGMENT_ENDED
+            self.handle_segment_ended()
+        else:
+            self._scstate = ScannerState.WAITING_FOR_HEADER
+            self.push_state()
+    
     def push_state(self):
         self._stack.append(self._state)
         self._state = None
         
     def pop_state(self):
-        self._state = self._stack.pop()
-        self._state.remaining = self._state.remaining -1
+        self._state = self._stack.pop()        
          
                     
     def parse_int(self, buff, start, end):
         buff.seek(start)
         l = (end - start)
-        print("------" + str(l))
         num = 0
         for i in range(l):
             byte = ord(buff.read(1))
-            print(byte)
             num = num | byte << (l - i - 1) * 8
-            print(num)
         return num
     
     def parse_value(self, formattype, buff, start, end):

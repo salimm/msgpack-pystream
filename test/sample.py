@@ -17,15 +17,15 @@ s = ""
 for i in range(10):
     s = s + "salam salam salam salam salam salam" 
 
-bdata =  msgpack.packb([1,2,3,4,5])
+a= []
+for i in range(100):
+    a.append(i)
+bdata =  msgpack.packb(a)
 # f.close()
  
 buf = BytesIO()
 buf.write(bdata)
 buf.seek(0)
-
-print(bdata)
-print(len(bdata))
 
 unpacker= StreamUnpacker();
 try:

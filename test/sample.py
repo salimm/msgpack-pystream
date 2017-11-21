@@ -5,7 +5,7 @@ Created on Nov 14, 2017
 '''
 from _io import BytesIO, StringIO
 import msgpack
-from msgpackstream.stream import StreamUnpacker
+from msgpackstream import StreamUnpacker
 import ijson
 import json
 
@@ -23,7 +23,14 @@ for i in range(1):
 
 a = []
 for i in range(2):
-    a.append([1.2, 2, 3, [2, "as",{"field": [1,2]}]])
+    a.append([1.2, 21232213121, 3, [2, "as", {"field": [1, 2]}]])
+a2 = []
+for i in range(20000):
+    a2 = a2 + [1]
+    
+m2 = {}
+for i in range(2000):
+    m2['field' + str(i)] = i
     
 m = {"f1":s, "f2":a}
 
@@ -33,10 +40,10 @@ buf.seek(0)
 parser = ijson.parse(buf)
 
 for prefix, event, value in parser:
-    print((prefix, event,value))
+    print((prefix, event, value))
 
 
-bdata = msgpack.packb(m)
+bdata = msgpack.packb(None)
  
 buf = BytesIO()
 buf.write(bdata)

@@ -99,6 +99,9 @@ class StreamUnpacker():
         self._state.length = self.parse_uint(buff, start, end) * self._state.template.value.multiplier
     
         if self.current_state().template.value.valuetype is ValueType.NESTED:
+            self.events.append((self.prefix[:], self._state.template.value.startevent, self._state.formattype, None))
+            if self._state.template.value.multiplier is 1:
+                self.prefix.append('item')
             self.push_state()
             self._scstate = ScannerState.WAITING_FOR_HEADER
         else:
@@ -113,14 +116,20 @@ class StreamUnpacker():
         :param end:
         '''
         segmenttype = self._state.template.value.segmenttype
+        prefix = self.prefix[:]
+        if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
+            prefix.append('item')
         # parsing value 
         if segmenttype in [SegmentType.HEADER_VALUE_PAIR, SegmentType.VARIABLE_LENGTH_VALUE, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR]:
             self._scstate = ScannerState.SEGMENT_ENDED
             value = self.parse_value(self._state.formattype, buff, start, end)
-            self.events.append((self.prefix, EventType.VALUE, self._state.formattype, value))
+            if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 2 and self._stack[-1].remaining % 2 is 0:
+                self.events.append((prefix, EventType.MAP_PROPERTY_NAME, self._state.formattype, value))
+            else:
+                self.events.append((prefix, EventType.VALUE, self._state.formattype, value))
         # next we should expect length
         elif segmenttype in [SegmentType.FIXED_EXT_FORMAT, SegmentType.EXT_FORMAT]:
-            self.events.append((self.prefix, EventType.EXT, self._state.formattype, buff[start:end]))
+            self.events.append((prefix, EventType.EXT, self._state.formattype, buff[start:end]))
         else:
             raise InvalidStateException(self._scstate, "header")
                   
@@ -138,7 +147,7 @@ class StreamUnpacker():
         if segmenttype is SegmentType.SINGLE_BYTE:
             self._scstate = ScannerState.SEGMENT_ENDED
             self._state = ParserState(frmt, template, isdone=True);
-            self.events.append((self.prefix, EventType.VALUE, frmt, self.util.get_value(byte, frmt)))
+            self.events.append((self.prefix[:], EventType.VALUE, frmt, self.util.get_value(byte, frmt)))
         # next we should expect value
         elif segmenttype is SegmentType.HEADER_VALUE_PAIR:
             self._scstate = ScannerState.WAITING_FOR_VALUE
@@ -146,8 +155,10 @@ class StreamUnpacker():
         # next we should expect value
         elif segmenttype is SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR:
             self._state = ParserState(frmt, template, length=self.util.get_value(byte, frmt) * template.value.multiplier , isdone=False);
-            if self._state.template.value.valuetype is ValueType.NESTED:
-                self.events.append((self.prefix, self._state.template.value.startevent, frmt, None))
+            if self._state.template.value.valuetype is ValueType.NESTED:                
+                self.events.append((self.prefix[:], self._state.template.value.startevent, frmt, None))
+                if template.value.multiplier is 1:
+                    self.prefix.append('item')
                 self.push_state()
                 self._scstate = ScannerState.WAITING_FOR_HEADER
             else:                
@@ -171,14 +182,22 @@ class StreamUnpacker():
             process end of the segment based on template
         '''
         if self._state.template.value.endevent is not None:
-            self.events.append((self.prefix, self._state.template.value.endevent, self._state.formattype, None))
+            self.events.append((self.prefix[:], self._state.template.value.endevent, self._state.formattype, None))
              
         if(len(self._stack) is  0):
             self._scstate = ScannerState.IDLE            
             return         
         self.pop_state()
         self._state.remaining = self._state.remaining - 1
+        if self._state.template.value.multiplier is 2:
+            if  self._state.remaining % 2 is 1:
+                self.prefix.append(self.events[-1][3])
+            else:
+                self.prefix.pop()
+            
         if self._state.remaining is 0:
+            if self._state.template.value.multiplier is 1:
+                    self.prefix.pop()
             self._scstate = ScannerState.SEGMENT_ENDED
             self.handle_segment_ended()
         else:
@@ -241,11 +260,11 @@ class StreamUnpacker():
     
     def parse_float32(self, buff, start, end):
         buff.seek(start)
-        return struct.unpack('>f',buff.read((end - start)))[0]
+        return struct.unpack('>f', buff.read((end - start)))[0]
     
     def parse_float64(self, buff, start, end):
         buff.seek(start)
-        return struct.unpack('>d',buff.read((end - start)))[0]
+        return struct.unpack('>d', buff.read((end - start)))[0]
     
     def twos_comp(self, val, bits):
         if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255

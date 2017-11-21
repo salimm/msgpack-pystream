@@ -5,7 +5,7 @@ Created on Nov 13, 2017
 '''
 from enum import Enum
 from abc import ABCMeta, abstractmethod
-from msgpackstream.errors import FormatTypeNotAcceptable
+from msgpackerrors import FormatTypeNotAcceptable
 
 
 

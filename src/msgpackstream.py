@@ -7,7 +7,7 @@ from _pyio import __metaclass__
 from abc import ABCMeta, abstractmethod
 from enum import Enum
 from msgpackformat import FormatUtil, SegmentType, FormatType, ValueType, \
-    EventType
+    EventType, ExtType
 from msgpackerrors import InvalidStateException
 from _io import BytesIO
 import binascii
@@ -62,11 +62,14 @@ class   ExtTypeParser():
     
         
     @abstractmethod
-    def deserializer(self, exttype, buff, start , end):
+    def deserialize(self, exttype, buff, start , end):
         '''
             Should be implemented for every user defined extension type
         :param data:
         '''
+    @abstractmethod
+    def handled_extcode(self):
+        pass
         
         
         
@@ -75,6 +78,9 @@ class TimestampParser(ExtTypeParser):
     
     def deserialize(self, exttype, data):
         pass
+    
+    def handled_extcode(self):
+        return -1
         
 
 
@@ -92,6 +98,7 @@ class StreamUnpacker():
         self.events = []
         self.memory = BytesIO()
         self.lastidx = 0;
+        self._deserializers = {}
         
     
     
@@ -172,14 +179,17 @@ class StreamUnpacker():
                 self.push_state()
                 self._scstate = ScannerState.WAITING_FOR_HEADER
         else:
-            if self._state.length is 0:  # it is an empty nested segment
-                prefix = self.prefix[:]
-                if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
-                    prefix.append('item')
-                self.events.append((prefix, EventType.VALUE, self._state.formattype, self.empty_value(self._state.formattype)))
-                self._scstate = ScannerState.SEGMENT_ENDED
-            else: 
+            if self._state.template.value.segmenttype is SegmentType.EXT_FORMAT:
+                self._scstate = ScannerState.WAITING_FOR_EXT_TYPE
+            else:
                 self._scstate = ScannerState.WAITING_FOR_VALUE
+                if self._state.length is 0:  # it is an empty nested segment
+                    prefix = self.prefix[:]
+                    if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
+                        prefix.append('item')
+                    self.events.append((prefix, EventType.VALUE, self._state.formattype, self.empty_value(self._state.formattype)))
+                    self._scstate = ScannerState.SEGMENT_ENDED
+                
         
     
     def handle_read_value(self, buff, start, end):
@@ -195,20 +205,25 @@ class StreamUnpacker():
             prefix.append('item')
         
         value = None
+        eventtype = None
+        ftype = self._state.formattype
         # parsing value 
         if segmenttype in [SegmentType.HEADER_VALUE_PAIR, SegmentType.VARIABLE_LENGTH_VALUE, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR]:
             self._scstate = ScannerState.SEGMENT_ENDED
-            value = self.parse_value(self._state.formattype, buff, start, end)            
+            value = self.parse_value(self._state.formattype, buff, start, end)
+            eventtype = EventType.VALUE            
         # next we should expect length
         elif segmenttype in [SegmentType.FIXED_EXT_FORMAT, SegmentType.EXT_FORMAT]:
             value = self.parse_ext_value(self._state.formattype, self._state.extcode, buff, start, end)
+            eventtype = EventType.EXT
+            ftype = ExtType(self._state.formattype, self._state.extcode)
         else:
             raise InvalidStateException(self._scstate, "header")
                   
         if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 2 and self._stack[-1].remaining % 2 is 0:
-                self.events.append((prefix, EventType.MAP_PROPERTY_NAME, self._state.formattype, value))
+                self.events.append((prefix, EventType.MAP_PROPERTY_NAME, ftype, value))
         else:
-            self.events.append((prefix, EventType.VALUE, self._state.formattype, value))
+            self.events.append((prefix, eventtype, ftype, value))
     
     def handle_read_header(self, byte):
         '''
@@ -267,12 +282,22 @@ class StreamUnpacker():
         extcode = self.parse_int(buff, idx, idx + 1)
         self._state.extcode = extcode
         self._scstate = ScannerState.WAITING_FOR_VALUE
+        if self._state.length is 0:  # it is an empty nested segment
+            prefix = self.prefix[:]
+            if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
+                prefix.append('item')
+            self.events.append((prefix, EventType.EXT, ExtType(self._state.formattype, self._state.extcode), b''))
+            self._scstate = ScannerState.SEGMENT_ENDED
         
         
         
     def parse_ext_value(self, formattype, extcode, buff, start, end):
         buff.seek(start)
-        return buff.read((end - start))
+        parser = self._deserializers.get(extcode, None)
+        if parser:
+            return parser.deserialize(ExtType(formattype, extcode), buff, start , end)
+        else:
+            return buff.read((end - start))
         
     def handle_segment_ended(self):
         '''
@@ -446,6 +471,12 @@ class StreamUnpacker():
         '''
         return self._state
     
+
+    def register(self, parser):
+        self._deserializers[parser.handled_extcode()] = parser
+    
+    
+    
     '''
         No set function to prevent other classes to change state
     '''
@@ -457,22 +488,24 @@ class StreamUnpacker():
         
 
 
-def stream_unpack(instream, buffersize=1000):
+def stream_unpack(instream, buffersize=1000, parsers=[]):
     '''
         Creates an iterator instance for the unpacker
     :param instream:
     :param buffersize:
     '''
-    return UnpackerIterator(instream, buffersize)
+    return UnpackerIterator(instream, buffersize, parsers)
     
     
     
     
 class UnpackerIterator(object):
     
-    def __init__(self, instream, buffersize=1000):
+    def __init__(self, instream, buffersize=1000, parsers=[]):
         self._instream = instream
         self._unpacker = StreamUnpacker()
+        for parser in parsers:
+            self._unpacker.register(parser)
         self._buffersize = buffersize
         self._events = []
         self._idx = 0

@@ -8,6 +8,8 @@ import msgpack
 from msgpackstream import StreamUnpacker
 import ijson
 import json
+import msgpackstream
+import math
 
 
 
@@ -34,8 +36,12 @@ for i in range(2000):
     
 m = {"f1":s, "f2":a}
 
+a = []
+for i in range(int(math.pow(2, 1))):
+    a.append(b'')
+
 buf = StringIO()
-buf.write(json.dumps(m).decode('ascii'))
+buf.write(json.dumps([1]).decode('ascii'))
 buf.seek(0)
 parser = ijson.parse(buf)
 
@@ -43,19 +49,11 @@ for prefix, event, value in parser:
     print((prefix, event, value))
 
 
-bdata = msgpack.packb(None)
- 
+bdata = msgpack.packb(a)
+print(bdata) 
 buf = BytesIO()
-buf.write(bdata)
+buf.write(b'\x92\xa0\xa0')
 buf.seek(0)
 
-unpacker = StreamUnpacker();
-try:
-    bytes_read = buf.read(10)
-    while bytes_read:
-        unpacker.process(bytes_read)
-        for e in unpacker.generate_events():
-            print(e)
-        bytes_read = buf.read(10)        
-finally:
-    buf.close()
+for e in msgpackstream.stream_unpack(buf):
+    print(e)

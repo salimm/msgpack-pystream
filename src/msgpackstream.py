@@ -129,7 +129,7 @@ class StreamUnpacker():
                     self.lastidx = idx + 1
             # if the scanner is expecting to parse one or multiple bytes as the value of the segment
             elif self._scstate is ScannerState.WAITING_FOR_VALUE:
-                self._state.remaining -= 1;                
+                self._state.remaining -= 1;                               
                 if(self._state.remaining == 0):
                     self.handle_read_value(self.memory, self.lastidx, idx + 1)
                     self.lastidx = idx + 1
@@ -164,10 +164,20 @@ class StreamUnpacker():
             self.events.append((self.prefix[:], self._state.template.value.startevent, self._state.formattype, None))
             if self._state.template.value.multiplier is 1:
                 self.prefix.append('item')
-            self.push_state()
-            self._scstate = ScannerState.WAITING_FOR_HEADER
+            if self._state.length is 0:# it is an empty nested segment
+                self._scstate = ScannerState.SEGMENT_ENDED
+            else: 
+                self.push_state()
+                self._scstate = ScannerState.WAITING_FOR_HEADER
         else:
-            self._scstate = ScannerState.WAITING_FOR_VALUE    
+            if self._state.length is 0:# it is an empty nested segment
+                prefix = self.prefix[:]
+                if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
+                    prefix.append('item')
+                self.events.append((prefix, EventType.VALUE, self._state.formattype, self.empty_value(self._state.formattype)))
+                self._scstate = ScannerState.SEGMENT_ENDED
+            else: 
+                self._scstate = ScannerState.WAITING_FOR_VALUE
         
     
     def handle_read_value(self, buff, start, end):
@@ -181,6 +191,7 @@ class StreamUnpacker():
         prefix = self.prefix[:]
         if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
             prefix.append('item')
+        
         # parsing value 
         if segmenttype in [SegmentType.HEADER_VALUE_PAIR, SegmentType.VARIABLE_LENGTH_VALUE, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR]:
             self._scstate = ScannerState.SEGMENT_ENDED
@@ -216,15 +227,23 @@ class StreamUnpacker():
             self._state = ParserState(frmt, template, length=template.value.length * template.value.multiplier , isdone=False);            
         # next we should expect value
         elif segmenttype is SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR:
-            self._state = ParserState(frmt, template, length=self.util.get_value(byte, frmt) * template.value.multiplier , isdone=False);
+            length = self.util.get_value(byte, frmt) * template.value.multiplier
+            self._state = ParserState(frmt, template, length=length , isdone=False);
             if self._state.template.value.valuetype is ValueType.NESTED:                
                 self.events.append((self.prefix[:], self._state.template.value.startevent, frmt, None))
                 if template.value.multiplier is 1:
                     self.prefix.append('item')
-                self.push_state()
-                self._scstate = ScannerState.WAITING_FOR_HEADER
-            else:                
-                self._scstate = ScannerState.WAITING_FOR_VALUE
+                if length is 0:
+                    self._scstate = ScannerState.SEGMENT_ENDED
+                else:
+                    self.push_state()
+                    self._scstate = ScannerState.WAITING_FOR_HEADER
+            else:          
+                if length is 0:
+                    self.events.append((self.prefix, EventType.VALUE, self._state.formattype, self.empty_value(self._state.formattype)))
+                    self._scstate = ScannerState.SEGMENT_ENDED
+                else:
+                    self._scstate = ScannerState.WAITING_FOR_VALUE
             
         # next we should expect length
         elif segmenttype is SegmentType.VARIABLE_LENGTH_VALUE:
@@ -281,7 +300,27 @@ class StreamUnpacker():
         self._state = self._stack.pop()        
          
                     
-    
+    def empty_value(self, formattype):
+        '''
+            returns default empty value 
+        :param formattype:
+        :param buff:
+        :param start:
+        :param end:
+        '''
+        if(formattype in [FormatType.STR_16, FormatType.STR_8, FormatType.STR_32, FormatType.FIXSTR]):
+            return ''
+        elif(formattype in [ FormatType.INT_16, FormatType.INT_32, FormatType.INT_64, FormatType.INT_8, FormatType.UINT_16]):
+            return 0
+        elif(formattype in [ FormatType.UINT_16, FormatType.UINT_32, FormatType.UINT_8, FormatType.UINT_64]):
+            return 0
+        elif(formattype in [ FormatType.FLOAT_32]):
+            return float(0)
+        elif(formattype in [  FormatType.FLOAT_64]):
+            return float(0)
+        elif(formattype in [  FormatType.BIN_8, FormatType.BIN_16, FormatType.BIN_32]):
+            return b''
+        
     def parse_value(self, formattype, buff, start, end):
         '''
             parse the value from the buffer given the interval for the appropraite bytes
@@ -292,12 +331,16 @@ class StreamUnpacker():
         '''
         if(formattype in [FormatType.STR_16, FormatType.STR_8, FormatType.STR_32, FormatType.FIXSTR]):
             return self.parse_str(buff, start, end)
-        elif(formattype in [ FormatType.INT_16, FormatType.INT_32, FormatType.INT_64, FormatType.INT_8, FormatType.UINT_16, FormatType.UINT_32, FormatType.UINT_8, FormatType.UINT_64]):
+        elif(formattype in [ FormatType.INT_16, FormatType.INT_32, FormatType.INT_64, FormatType.INT_8, FormatType.UINT_16]):
             return self.parse_int(buff, start, end)
+        elif(formattype in [ FormatType.UINT_16, FormatType.UINT_32, FormatType.UINT_8, FormatType.UINT_64]):
+            return self.parse_uint(buff, start, end)
         elif(formattype in [ FormatType.FLOAT_32]):
             return self.parse_float32(buff, start, end)
         elif(formattype in [  FormatType.FLOAT_64]):
             return self.parse_float64(buff, start, end)
+        elif(formattype in [  FormatType.BIN_8, FormatType.BIN_16, FormatType.BIN_32]):
+            return self.parse_bin(buff, start, end)
     
     def parse_uint(self, buff, start, end):
         '''
@@ -321,14 +364,31 @@ class StreamUnpacker():
         return self.twos_comp(num, l * 8)
     
     def parse_float32(self, buff, start, end):
+        '''
+            parses float 32 bit
+        :param buff:
+        :param start:
+        :param end:
+        '''
         buff.seek(start)
         return struct.unpack('>f', buff.read((end - start)))[0]
     
     def parse_float64(self, buff, start, end):
+        '''
+            parses float 64 bit
+        :param buff:
+        :param start:
+        :param end:
+        '''
         buff.seek(start)
         return struct.unpack('>d', buff.read((end - start)))[0]
     
     def twos_comp(self, val, bits):
+        '''
+            two complement to get negative
+        :param val:
+        :param bits:
+        '''
         if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
             val = val - (1 << bits)  # compute negative value
         return val  
@@ -336,6 +396,17 @@ class StreamUnpacker():
     def parse_str(self, buff, start, end):
         '''
             parse string from the buffer
+            
+        :param buff:
+        :param start:
+        :param end:
+        '''
+        buff.seek(start)
+        return buff.read((end - start)) 
+    
+    def parse_bin(self, buff, start, end):
+        '''
+            parse binary array
             
         :param buff:
         :param start:
@@ -398,6 +469,7 @@ class UnpackerIterator(object):
             self._events = []
             try:                
                 while len(self._events) is 0:
+                    self._idx = 0
                     bytes_read = self._instream.read(self._buffersize)
                     if not bytes_read:
                         raise StopIteration()

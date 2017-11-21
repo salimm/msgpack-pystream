@@ -21,12 +21,13 @@ class ParserState():
         template to be parsed based on and the length needed in the parsing process.
          
     '''
-    def __init__(self, formattype, template, length=None, isdone=False):
+    def __init__(self, formattype, template, length=None, isdone=False, extcode=None):
         self.formattype = formattype
         self.template = template
         self._length = length
         self.remaining = length 
         self.isdone = isdone
+        self.extcode = extcode
         
         
     def set_length(self, length):
@@ -39,7 +40,7 @@ class ParserState():
     length = property(get_length, set_length)
     
     def __str__(self):
-        return "ParserState formattype: " + str(self.formattype) + ", tempalte: " + str(self.template) + ", length: " + str(self.length) + ", remaining: " + str(self.remaining) + ", isdone: " + str(self.isdone) + "}";
+        return "ParserState formattype: " + str(self.formattype) + ", tempalte: " + str(self.template) + ", length: " + str(self.length) + ", remaining: " + str(self.remaining) + ", isdone: " + str(self.isdone) + ", extcode: " + str(self.extcode) + "}";
 
 
 
@@ -61,7 +62,7 @@ class   ExtTypeParser():
     
         
     @abstractmethod
-    def deserializer(self, exttype, data):
+    def deserializer(self, exttype, buff, start , end):
         '''
             Should be implemented for every user defined extension type
         :param data:
@@ -105,7 +106,7 @@ class StreamUnpacker():
         idx = self.memory.tell()
         self.memory.write(buff)
         self.memory.seek(idx)
-                
+            
         # read first byte 
         byte = self.memory.read(1)
         
@@ -135,15 +136,16 @@ class StreamUnpacker():
                     self.lastidx = idx + 1
             # if the scanner is expecting to parse an extension
             elif self._scstate is ScannerState.WAITING_FOR_EXT_TYPE:
-                pass            
+                self.handle_read_ext_type(self.memory, idx)
+                self.lastidx = idx + 1
             
             # if a data segment is ended
             if self._scstate is ScannerState.SEGMENT_ENDED:
-                self.handle_segment_ended()
+                self.handle_segment_ended()                
             # proceed with scanning   
             idx = idx + 1
             byte = self.memory.read(1)
-        
+            
         # not finished processing all since it needed extra info     
         if self.lastidx is idx:
             self.memory = BytesIO()
@@ -164,13 +166,13 @@ class StreamUnpacker():
             self.events.append((self.prefix[:], self._state.template.value.startevent, self._state.formattype, None))
             if self._state.template.value.multiplier is 1:
                 self.prefix.append('item')
-            if self._state.length is 0:# it is an empty nested segment
+            if self._state.length is 0:  # it is an empty nested segment
                 self._scstate = ScannerState.SEGMENT_ENDED
             else: 
                 self.push_state()
                 self._scstate = ScannerState.WAITING_FOR_HEADER
         else:
-            if self._state.length is 0:# it is an empty nested segment
+            if self._state.length is 0:  # it is an empty nested segment
                 prefix = self.prefix[:]
                 if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
                     prefix.append('item')
@@ -192,20 +194,21 @@ class StreamUnpacker():
         if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
             prefix.append('item')
         
+        value = None
         # parsing value 
         if segmenttype in [SegmentType.HEADER_VALUE_PAIR, SegmentType.VARIABLE_LENGTH_VALUE, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR]:
             self._scstate = ScannerState.SEGMENT_ENDED
-            value = self.parse_value(self._state.formattype, buff, start, end)
-            if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 2 and self._stack[-1].remaining % 2 is 0:
-                self.events.append((prefix, EventType.MAP_PROPERTY_NAME, self._state.formattype, value))
-            else:
-                self.events.append((prefix, EventType.VALUE, self._state.formattype, value))
+            value = self.parse_value(self._state.formattype, buff, start, end)            
         # next we should expect length
         elif segmenttype in [SegmentType.FIXED_EXT_FORMAT, SegmentType.EXT_FORMAT]:
-            self.events.append((prefix, EventType.EXT, self._state.formattype, buff[start:end]))
+            value = self.parse_ext_value(self._state.formattype, self._state.extcode, buff, start, end)
         else:
             raise InvalidStateException(self._scstate, "header")
                   
+        if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 2 and self._stack[-1].remaining % 2 is 0:
+                self.events.append((prefix, EventType.MAP_PROPERTY_NAME, self._state.formattype, value))
+        else:
+            self.events.append((prefix, EventType.VALUE, self._state.formattype, value))
     
     def handle_read_header(self, byte):
         '''
@@ -252,11 +255,24 @@ class StreamUnpacker():
         # next we should expect length
         elif segmenttype is SegmentType.EXT_FORMAT:
             self._scstate = ScannerState.WAITING_FOR_LENGTH
+            self._state = ParserState(frmt, template, length=template.value.length , isdone=False);
         # next we should expect type       
         elif segmenttype is SegmentType.FIXED_EXT_FORMAT:
+            self._state = ParserState(frmt, template, length=template.value.length , isdone=False);
             self._scstate = ScannerState.WAITING_FOR_EXT_TYPE
         else:
             raise InvalidStateException(self._scstate, "header")
+        
+    def handle_read_ext_type(self, buff, idx):
+        extcode = self.parse_int(buff, idx, idx + 1)
+        self._state.extcode = extcode
+        self._scstate = ScannerState.WAITING_FOR_VALUE
+        
+        
+        
+    def parse_ext_value(self, formattype, extcode, buff, start, end):
+        buff.seek(start)
+        return buff.read((end - start))
         
     def handle_segment_ended(self):
         '''
@@ -467,18 +483,18 @@ class UnpackerIterator(object):
     def __next__(self):
         if self._idx >= len(self._events):
             self._events = []
-            try:                
-                while len(self._events) is 0:
-                    self._idx = 0
-                    bytes_read = self._instream.read(self._buffersize)
-                    if not bytes_read:
-                        raise StopIteration()
-                    self._unpacker.process(bytes_read)
-                    self._events = self._unpacker.generate_events()
-            except:
-                raise StopIteration()
+#             try:                
+            while len(self._events) is 0:
+                self._idx = 0
+                bytes_read = self._instream.read(self._buffersize)
+                if not bytes_read:
+                    raise StopIteration()
+                self._unpacker.process(bytes_read)
+                self._events = self._unpacker.generate_events()
+#             except :
+#                 raise StopIteration()
         event = self._events[self._idx]
-        self._idx = self._idx +1 
+        self._idx = self._idx + 1 
         return event
         
         

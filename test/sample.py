@@ -5,7 +5,6 @@ Created on Nov 14, 2017
 '''
 from _io import BytesIO, StringIO
 import msgpack
-from msgpackstream import StreamUnpacker
 import ijson
 import json
 import msgpackstream
@@ -52,7 +51,7 @@ for prefix, event, value in parser:
 bdata = msgpack.packb(a)
 print(bdata) 
 buf = BytesIO()
-buf.write(b'\x92\xa0\xa0')
+buf.write(b'\xd4\x01\x00')
 buf.seek(0)
 
 for e in msgpackstream.stream_unpack(buf):

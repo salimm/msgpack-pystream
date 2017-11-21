@@ -6,6 +6,7 @@ Created on Nov 13, 2017
 from enum import Enum
 from abc import ABCMeta, abstractmethod
 from msgpackerrors import FormatTypeNotAcceptable
+from operator import __eq__
 
 
 
@@ -186,20 +187,10 @@ class ExtType():
     '''
     __classmeta__ = ABCMeta
     
-    def __init__(self, formattype, extcode, length=None):
-        if not self.accepts_type(formattype):
-            raise FormatTypeNotAcceptable();
+    def __init__(self, formattype, extcode):
         self._formattype = formattype
-        self._length = length
-        self._extcode = extcode        
+        self._extcode = extcode
         
-    @abstractmethod
-    def accepts_type(self, formattype):
-        '''
-            checks if the given type is acceptable for this extension type
-        :param formattype:
-        '''
-    
     def get_formattype(self):
         return self._formattype
     
@@ -212,18 +203,13 @@ class ExtType():
     
     def set_extcode(self, extcode):
         self._extcode = extcode
-        
-    def get_length(self):
-        return self._length
-    
-    def set_length(self, length):
-        self._length = length
-        
-    
     
     formattype = property(get_formattype, set_formattype)
     extcode = property(get_extcode, set_extcode)
-    length = property(get_length, set_length)
+    
+    def __eq__(self, o):
+        if isinstance(o, ExtType):
+            return o.extcode is self.extcode and o.formattype is self.formattype
     
     def __str__(self):
         return "{ format:" + str(self.formattype) + ", length:" + str(self._length) + ", extcode:" + str(self._extcode) + "}";
@@ -241,11 +227,6 @@ class TimestampType(ExtType):
         else:
             length = 96
         ExtType.__init__(self, formattype, extcode, length)
-        
-        
-    @abstractmethod
-    def accepts_type(self, formattype):
-        return formattype == FormatType.FIXEXT_4 or formattype == FormatType.FIXEXT_8 or formattype == FormatType.EXT_8 
         
             
         

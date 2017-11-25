@@ -119,13 +119,10 @@ class StreamUnpacker():
         
         # process input while exists
         while byte:
-#             print(str(self.lastidx) + ' - ' + str(idx))
-#             print(self._scstate)
-#             print(self._state)
             byte = ord(byte)
             
             # expected start of a new segment
-            if self._scstate in [ScannerState.IDLE, ScannerState.WAITING_FOR_HEADER]:                
+            if self._scstate in [ScannerState.IDLE, ScannerState.WAITING_FOR_HEADER]:
                 self.handle_read_header(byte)
                 self.lastidx = idx + 1
             # the scanner expects to read one or multiple bytes that contain an 

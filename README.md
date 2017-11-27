@@ -95,3 +95,6 @@ class ExtType():
     extcode = property(get_extcode, set_extcode)
     
 ```
+
+## Credits:
+Thanks to everyone who contributed to the [msgpack](). Additionaly the interface of the api was inspired by the simple interface of [ijson](https://github.com/isagalaev/ijson) library.

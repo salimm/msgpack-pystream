@@ -142,26 +142,10 @@ class ExtType():
         self._formattype = formattype
         self._extcode = extcode
         
-    def get_formattype(self):
-        return self._formattype
-    
-    def set_formattype(self, formattype):
-        self._formattype = formattype
-        
-        
-    def get_extcode(self):
-        return self._extcode
-    
-    def set_extcode(self, extcode):
-        self._extcode = extcode
+    ...
+    ...
     
     formattype = property(get_formattype, set_formattype)
     extcode = property(get_extcode, set_extcode)
     
-    def __eq__(self, o):
-        if isinstance(o, ExtType):
-            return o.extcode is self.extcode and o.formattype is self.formattype
-    
-    def __str__(self):
-        return "{ format:" + str(self.formattype) + ", length:" + str(self._length) + ", extcode:" + str(self._extcode) + "}";
 ```

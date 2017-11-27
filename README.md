@@ -42,6 +42,20 @@ Simple msgpackstream usage is to unpack an inputstream
     ..
     events = unpack(instream, buffersize)
 ```
+The instream is an inputstream and buffersize is an int value indicating the buffer size to read from the stream. While, the method allows passing the buffersize, this argument is optional and the default value is 1000.
 
+A more flexible way of using msgpackstream is to use the StreamUnpacker class as shown bellow:
 
-However, it can be used in more flexible enviroment
+```python
+    from msgpackstream.stream import StreamUnpacker
+    ..
+    ..
+    unpacker = StreamUnpacker()
+    bytes = read()
+    while bytes:
+        unpacker.process(bytes)
+        events = unpacker.generate_events()
+        for event in events:
+            print(event)                               
+    ...
+```

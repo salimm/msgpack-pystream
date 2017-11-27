@@ -136,7 +136,6 @@ class ExtType():
     '''
     Class for Extention Type including format type, template and length in the header
     '''
-    __classmeta__ = ABCMeta
     
     def __init__(self, formattype, extcode):
         self._formattype = formattype

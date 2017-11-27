@@ -4,9 +4,7 @@ Created on Nov 13, 2017
 @author: Salim
 '''
 from enum import Enum
-from abc import ABCMeta, abstractmethod
-from msgpackerrors import FormatTypeNotAcceptable
-from operator import __eq__
+from abc import ABCMeta
 
 
 

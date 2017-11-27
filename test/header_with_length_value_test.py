@@ -7,16 +7,15 @@ Created on Nov 20, 2017
 import unittest
 import msgpack
 from _io import BytesIO
-import msgpackstream
-from msgpackformat import FormatType
-from msgpackstream import  EventType
+from msgpackstream.format import FormatType
+from msgpackstream.stream import  EventType, unpack
 
 
 
 class HeaderWithLengthValueTest(unittest.TestCase):
 
     def test_fixst_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\xA0'))]
+        events = [e for e in unpack(self.create_instream(b'\xA0'))]
         self.assertEqual( 1, len(events))
         
         self.assertEqual(FormatType.FIXSTR, events[0][2])
@@ -25,7 +24,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
     def test_fixstr(self):
         bdata = msgpack.packb('test string')
         buff = self.create_instream(bdata)
-        events = [e for e in msgpackstream.stream_unpack(buff)]
+        events = [e for e in unpack(buff)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.FIXSTR, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -33,7 +32,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         self.assertEqual('test string', events[0][3])
         
     def test_fixarrray_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\x90'))]
+        events = [e for e in unpack(self.create_instream(b'\x90'))]
         self.assertEqual( 2, len(events))
         
         self.assertEqual(FormatType.FIXARRAY, events[0][2])
@@ -44,7 +43,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
     def test_fixarray(self):
         bdata = msgpack.packb([1, 2, 3])
         buff = self.create_instream(bdata)
-        events = [e for e in msgpackstream.stream_unpack(buff)]
+        events = [e for e in unpack(buff)]
         self.assertEqual(5, len(events))
         
         self.assertEqual(FormatType.FIXARRAY, events[0][2])
@@ -72,7 +71,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         self.assertEqual(None, events[4][3])
     
     def test_fixmap_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\x80'))]
+        events = [e for e in unpack(self.create_instream(b'\x80'))]
         self.assertEqual( 2, len(events))
         
         self.assertEqual(FormatType.FIXMAP, events[0][2])
@@ -83,7 +82,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
     def test_fixmap(self):
         bdata = msgpack.packb({"f1":1, "f2":2.2, "f3":'test'})
         buff = self.create_instream(bdata)
-        events = [e for e in msgpackstream.stream_unpack(buff)]
+        events = [e for e in unpack(buff)]
         self.assertEqual(8, len(events))
         
         self.assertEqual(FormatType.FIXMAP, events[0][2])

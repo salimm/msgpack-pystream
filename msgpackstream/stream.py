@@ -6,12 +6,12 @@ Created on Nov 13, 2017
 from _pyio import __metaclass__
 from abc import ABCMeta, abstractmethod
 from enum import Enum
-from msgpackformat import FormatUtil, SegmentType, FormatType, ValueType, \
+from msgpackstream.format import FormatUtil, SegmentType, FormatType, ValueType, \
     EventType, ExtType
-from msgpackerrors import InvalidStateException
 from _io import BytesIO
 import binascii
 import struct
+from msgpackstream.errors import InvalidStateException
 
 
 
@@ -485,7 +485,7 @@ class StreamUnpacker():
         
 
 
-def stream_unpack(instream, buffersize=1000, parsers=[]):
+def unpack(instream, buffersize=1000, parsers=[]):
     '''
         Creates an iterator instance for the unpacker
     :param instream:

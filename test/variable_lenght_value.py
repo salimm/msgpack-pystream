@@ -6,9 +6,8 @@ Created on Nov 20, 2017
 
 import unittest
 from _io import BytesIO
-import msgpackstream
-from msgpackformat import FormatType
-from msgpackstream import  EventType
+from msgpackstream.format import FormatType
+from msgpackstream.stream import  EventType, unpack
 import math
 import msgpack
 
@@ -18,7 +17,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
 
 
     def test_str8_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\xD9\x00'))]
+        events = [e for e in unpack(self.create_instream(b'\xD9\x00'))]
         self.assertEqual(1, len(events))
         
         self.assertEqual(FormatType.STR_8, events[0][2])
@@ -26,7 +25,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         
     def test_str8(self):
         bdata = self.create_instream(b'\xD9\x0Btest string')
-        events = [e for e in msgpackstream.stream_unpack(bdata)]
+        events = [e for e in unpack(bdata)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.STR_8, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -34,7 +33,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         self.assertEqual('test string', events[0][3])
         
     def test_str16_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\xDA\x00\x00'))]
+        events = [e for e in unpack(self.create_instream(b'\xDA\x00\x00'))]
         self.assertEqual(1, len(events))
         
         self.assertEqual(FormatType.STR_16, events[0][2])
@@ -42,7 +41,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
             
     def test_str16(self):
         bdata = self.create_instream(b'\xDA\x00\x0Btest string')
-        events = [e for e in msgpackstream.stream_unpack(bdata)]
+        events = [e for e in unpack(bdata)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.STR_16, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -50,7 +49,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         self.assertEqual('test string', events[0][3])
         
     def test_str32_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\xDB\x00\x00\x00\x00'))]
+        events = [e for e in unpack(self.create_instream(b'\xDB\x00\x00\x00\x00'))]
         self.assertEqual(1, len(events))
         
         self.assertEqual(FormatType.STR_32, events[0][2])
@@ -59,7 +58,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         
     def test_str32(self):
         bdata = self.create_instream(b'\xDB\x00\x00\x00\x0Btest string')
-        events = [e for e in msgpackstream.stream_unpack(bdata)]
+        events = [e for e in unpack(bdata)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.STR_32, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -67,7 +66,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         self.assertEqual('test string', events[0][3])
         
     def test_bin8_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\xC4\x00'))]
+        events = [e for e in unpack(self.create_instream(b'\xC4\x00'))]
         self.assertEqual(1, len(events))
         
         self.assertEqual(FormatType.BIN_8, events[0][2])
@@ -75,7 +74,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         
     def test_bin8(self):
         bdata = self.create_instream(b'\xC4\x0Btest string')
-        events = [e for e in msgpackstream.stream_unpack(bdata)]
+        events = [e for e in unpack(bdata)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.BIN_8, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -83,7 +82,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         self.assertEqual('test string', events[0][3])
         
     def test_bin16_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\xC5\x00\x00'))]
+        events = [e for e in unpack(self.create_instream(b'\xC5\x00\x00'))]
         self.assertEqual(1, len(events))
         
         self.assertEqual(FormatType.BIN_16, events[0][2])
@@ -91,7 +90,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
     
     def test_bin16(self):
         bdata = self.create_instream(b'\xC5\x00\x0Btest string')
-        events = [e for e in msgpackstream.stream_unpack(bdata)]
+        events = [e for e in unpack(bdata)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.BIN_16, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -99,7 +98,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         self.assertEqual('test string', events[0][3])
         
     def test_bin32_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\xC6\x00\x00\x00\x00'))]
+        events = [e for e in unpack(self.create_instream(b'\xC6\x00\x00\x00\x00'))]
         self.assertEqual(1, len(events))
         
         self.assertEqual(FormatType.BIN_32, events[0][2])
@@ -107,7 +106,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         
     def test_bin32(self):
         bdata = self.create_instream(b'\xC6\x00\x00\x00\x0Btest string')
-        events = [e for e in msgpackstream.stream_unpack(bdata)]
+        events = [e for e in unpack(bdata)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.BIN_32, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -117,7 +116,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
     
         
     def test_array16_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\xDC\x00\x00'))]
+        events = [e for e in unpack(self.create_instream(b'\xDC\x00\x00'))]
         self.assertEqual(2, len(events))
         
         self.assertEqual(FormatType.ARRAY_16, events[0][2])
@@ -130,7 +129,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         for i in range(int(math.pow(2, 15))):
             a.append(1)
         
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(msgpack.packb(a)))]
+        events = [e for e in unpack(self.create_instream(msgpack.packb(a)))]
         
         self.assertEqual(len(a) + 2, len(events))
         
@@ -149,7 +148,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
             self.assertEqual(FormatType.POS_FIXINT, events[i + 1][2])
             
     def test_array32_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\xDD\x00\x00\x00\x00'))]
+        events = [e for e in unpack(self.create_instream(b'\xDD\x00\x00\x00\x00'))]
         self.assertEqual(2, len(events))
         
         self.assertEqual(FormatType.ARRAY_32, events[0][2])
@@ -161,7 +160,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         for i in range(int(math.pow(2, 16))):
             a.append(1)
         
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(msgpack.packb(a)))]
+        events = [e for e in unpack(self.create_instream(msgpack.packb(a)))]
         
         self.assertEqual(len(a) + 2, len(events))
         
@@ -182,7 +181,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         
         
     def test_map16_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\xDE\x00\x00'))]
+        events = [e for e in unpack(self.create_instream(b'\xDE\x00\x00'))]
         self.assertEqual(2, len(events))
         
         self.assertEqual(FormatType.MAP_16, events[0][2])
@@ -198,7 +197,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         for i in range(length):
             a['f' + str(i)] = 1
         
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(msgpack.packb(a)))]
+        events = [e for e in unpack(self.create_instream(msgpack.packb(a)))]
         
         self.assertEqual(len(a)*2 + 2, len(events))
         
@@ -224,7 +223,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
                 self.assertEqual(FormatType.POS_FIXINT, events[i+ 1][2])
         
     def test_map32_empty(self):
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(b'\xDF\x00\x00\x00\x00'))]
+        events = [e for e in unpack(self.create_instream(b'\xDF\x00\x00\x00\x00'))]
         self.assertEqual(2, len(events))
         
         self.assertEqual(FormatType.MAP_32, events[0][2])
@@ -240,7 +239,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         for i in range(length):
             a['f' + str(i)] = 1
         
-        events = [e for e in msgpackstream.stream_unpack(self.create_instream(msgpack.packb(a)))]
+        events = [e for e in unpack(self.create_instream(msgpack.packb(a)))]
         
         self.assertEqual(len(a)*2 + 2, len(events))
         

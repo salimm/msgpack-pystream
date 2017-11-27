@@ -6,9 +6,8 @@ Created on Nov 20, 2017
 import unittest
 import msgpack
 from _io import BytesIO
-import msgpackstream
-from msgpackformat import FormatType
-from msgpackstream import  EventType
+from msgpackstream.format import FormatType
+from msgpackstream.stream import  EventType, unpack
 
 
 
@@ -17,7 +16,7 @@ class TestSingleByteTypes(unittest.TestCase):
     def test_nil(self):
         bdata = msgpack.packb(None)
         buff = self.create_instream(bdata)
-        events = [e for e in msgpackstream.stream_unpack(buff)]
+        events = [e for e in unpack(buff)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.NIL, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -29,7 +28,7 @@ class TestSingleByteTypes(unittest.TestCase):
         #checking min
         bdata = msgpack.packb(1)
         buff = self.create_instream(bdata)
-        events = [e for e in msgpackstream.stream_unpack(buff)]
+        events = [e for e in unpack(buff)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.POS_FIXINT, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -39,7 +38,7 @@ class TestSingleByteTypes(unittest.TestCase):
         # checking max 
         bdata = msgpack.packb(127)
         buff = self.create_instream(bdata)
-        events = [e for e in msgpackstream.stream_unpack(buff)]
+        events = [e for e in unpack(buff)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.POS_FIXINT, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -50,7 +49,7 @@ class TestSingleByteTypes(unittest.TestCase):
         #checking min
         bdata = msgpack.packb(False)
         buff = self.create_instream(bdata)
-        events = [e for e in msgpackstream.stream_unpack(buff)]
+        events = [e for e in unpack(buff)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.FALSE, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -60,7 +59,7 @@ class TestSingleByteTypes(unittest.TestCase):
         # checking max 
         bdata = msgpack.packb(True)
         buff = self.create_instream(bdata)
-        events = [e for e in msgpackstream.stream_unpack(buff)]
+        events = [e for e in unpack(buff)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.TRUE, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -72,7 +71,7 @@ class TestSingleByteTypes(unittest.TestCase):
         #checking min
         bdata = msgpack.packb(-1)
         buff = self.create_instream(bdata)
-        events = [e for e in msgpackstream.stream_unpack(buff)]
+        events = [e for e in unpack(buff)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.NEG_FIXINT, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])
@@ -82,7 +81,7 @@ class TestSingleByteTypes(unittest.TestCase):
         # checking max 
         bdata = msgpack.packb(-15)
         buff = self.create_instream(bdata)
-        events = [e for e in msgpackstream.stream_unpack(buff)]
+        events = [e for e in unpack(buff)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.NEG_FIXINT, events[0][2])
         self.assertEqual(EventType.VALUE, events[0][1])

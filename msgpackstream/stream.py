@@ -48,12 +48,12 @@ class  ScannerState(Enum):
     '''
         Scanner state contains the intention of the scanner and what it expects next based on what it has read so far
     '''
-    IDLE = 1 
-    WAITING_FOR_HEADER = 2
-    WAITING_FOR_EXT_TYPE = 3
-    WAITING_FOR_LENGTH = 4
-    WAITING_FOR_VALUE = 5
-    SEGMENT_ENDED = 6
+    IDLE = 1                    # parser just started or has processed all given data successfully (no buffer exists)
+    WAITING_FOR_HEADER = 2      #expecting a header byte to be read next
+    WAITING_FOR_EXT_TYPE = 3    #expecting an extension type segment  
+    WAITING_FOR_LENGTH = 4      #expecting length of the value to be read next
+    WAITING_FOR_VALUE = 5       # expecting value to be read first
+    SEGMENT_ENDED = 6           #segment finished parsing
         
     
 

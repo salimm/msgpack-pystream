@@ -12,6 +12,7 @@ from _io import BytesIO
 import binascii
 import struct
 from msgpackstream.errors import InvalidStateException
+import datetime
 
 
 
@@ -48,12 +49,12 @@ class  ScannerState(Enum):
     '''
         Scanner state contains the intention of the scanner and what it expects next based on what it has read so far
     '''
-    IDLE = 1                    # parser just started or has processed all given data successfully (no buffer exists)
-    WAITING_FOR_HEADER = 2      #expecting a header byte to be read next
-    WAITING_FOR_EXT_TYPE = 3    #expecting an extension type segment  
-    WAITING_FOR_LENGTH = 4      #expecting length of the value to be read next
-    WAITING_FOR_VALUE = 5       # expecting value to be read first
-    SEGMENT_ENDED = 6           #segment finished parsing
+    IDLE = 1  # parser just started or has processed all given data successfully (no buffer exists)
+    WAITING_FOR_HEADER = 2  # expecting a header byte to be read next
+    WAITING_FOR_EXT_TYPE = 3  # expecting an extension type segment  
+    WAITING_FOR_LENGTH = 4  # expecting length of the value to be read next
+    WAITING_FOR_VALUE = 5  # expecting value to be read first
+    SEGMENT_ENDED = 6  # segment finished parsing
         
     
 
@@ -76,11 +77,55 @@ class   ExtTypeParser():
 
 class TimestampParser(ExtTypeParser):
     
-    def deserialize(self, exttype, data):
-        pass
+    def deserialize(self, exttype, buff, start, end):
+        if exttype.formattype is FormatType.FIXEXT_4:
+            return datetime.datetime.fromtimestamp(self.parse_uint(buff, start, end))
+        elif exttype.formattype is FormatType.FIXEXT_8:
+            val = self.parse_uint(buff, start, end)
+            nsec = val >> 34
+            sec = val & 0x00000003ffffffffL
+            return datetime.datetime.fromtimestamp(sec + nsec / 1e9)
+        elif exttype.formattype is FormatType.EXT_8:
+            nsec = self.parse_uint(buff, start, start + 4)
+            sec = self.parse_int(buff, start + 4, end)
+            return datetime.datetime.fromtimestamp(sec + nsec / 1e9)
+        else:
+            raise Exception("Unsupported FormatType " + str(exttype.formattype) + " for Timestamp (extcode = -1)!!")        
+
     
     def handled_extcode(self):
         return -1
+    
+    def parse_uint(self, buff, start, end):
+        '''
+            parse an integer from the buffer given the interval of bytes
+        :param buff:
+        :param start:
+        :param end:
+        '''
+        buff.seek(start)
+        return int(binascii.hexlify(buff.read((end - start))), 16)
+    
+    def parse_int(self, buff, start, end):
+        '''
+            parse an integer from the buffer given the interval of bytes
+        :param buff:
+        :param start:
+        :param end:
+        '''
+        num = self.parse_uint(buff, start, end)
+        l = (end - start)
+        return self.twos_comp(num, l * 8)
+    
+    def twos_comp(self, val, bits):
+        '''
+            two complement to get negative
+        :param val:
+        :param bits:
+        '''
+        if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
+            val = val - (1 << bits)  # compute negative value
+        return val  
         
 
 
@@ -99,6 +144,7 @@ class StreamUnpacker():
         self.memory = BytesIO()
         self.lastidx = 0;
         self._deserializers = {}
+        self.register(TimestampParser())
         
     
     

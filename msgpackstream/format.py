@@ -207,10 +207,11 @@ class ExtType():
     
     def __eq__(self, o):
         if isinstance(o, ExtType):
-            return o.extcode is self.extcode and o.formattype is self.formattype
+            return o.extcode == self.extcode and o.formattype is self.formattype
+        return False
     
     def __str__(self):
-        return "{ format:" + str(self.formattype) + ", length:" + str(self._length) + ", extcode:" + str(self._extcode) + "}";
+        return "{ format:" + str(self.formattype) + ", extcode:" + str(self._extcode) + "}";
                 
         
     

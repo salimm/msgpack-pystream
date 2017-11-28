@@ -135,5 +135,17 @@ or
     unpack(instream, buffersize, [praser])
 ```
 
+## TODO
+
+- Optimize byte scanner
+- Add additional unit test for more complecated messages
+
+
+## Related Projects and Links
+- Check out my parallel project to create some sort of easy to use Python Object Parser ([POP](https://github.com/salimm/pop))
+- Check out official msgpack package [u-msgpack-python](https://github.com/vsergeev/u-msgpack-python)
+- Another third msgpack package for python [msgpack-python](https://github.com/msgpack/msgpack-python)
+- Latest msgpack specification [link](https://github.com/msgpack/msgpack/blob/master/spec.md)
+
 ## Credits:
 Thanks to everyone who contributed to the [msgpack](). Additionaly the interface of the api was inspired by the simple interface of [ijson](https://github.com/isagalaev/ijson) library.

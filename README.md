@@ -96,5 +96,44 @@ class ExtType():
     
 ```
 
+# Extension Type
+Msgpackstream allows handling of extension types in two different ways:
+
+- Receiving a byte[] within and EXT event that can be processed
+- Registering a custom ExtParser class that can be used to parse the byte[] within the buffer
+
+The latter is slightly more efficient as it prevents an extra step of copying byte[] into an event
+
+```python
+class   ExtTypeParser():
+    __metaclass__ = ABCMeta
+    
+        
+    @abstractmethod
+    def deserialize(self, exttype, buff, start , end):
+        '''
+            Should be implemented for every user defined extension type
+        :param data:
+        '''
+    @abstractmethod
+    def handled_extcode(self):
+        pass
+```
+
+The handled_extcode class should simply return the extcode number that is handled by the parser implmentation. However, the main method is the deserialize method that received exttype as explained in the previous section, buffer and the range that value can be found in. Finally an instance of the ExtTypeParser can be registered using the following methods:
+
+```python
+    parser = MyExtParser()
+    unpacker = StreamUnpacker()
+    unpacker.register(parser)
+```
+
+or 
+
+```python
+    parser = MyExtParser()
+    unpack(instream, buffersize, [praser])
+```
+
 ## Credits:
 Thanks to everyone who contributed to the [msgpack](). Additionaly the interface of the api was inspired by the simple interface of [ijson](https://github.com/isagalaev/ijson) library.

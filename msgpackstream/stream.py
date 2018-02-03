@@ -241,8 +241,8 @@ class StreamUnpacker():
     
         if self.current_state().template.value.valuetype is ValueType.NESTED:
             self.events.append((self.prefix[:], self._state.template.value.startevent, self._state.formattype, None))
-#             if self._state.template.value.multiplier is 1:
-#                 self.prefix.append('item')
+            if self._state.template.value.multiplier is 1:
+                self.prefix.append('item')
             if self._state.length is 0:  # it is an empty nested segment
                 self._scstate = ScannerState.SEGMENT_ENDED
             else: 
@@ -254,11 +254,11 @@ class StreamUnpacker():
             else:
                 self._scstate = ScannerState.WAITING_FOR_VALUE
                 if self._state.length is 0:  # it is an empty nested segment
-#                     prefix = self.prefix[:]
-#                     if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
-#                         prefix.append('item')
-                    self.events.append(('xxx', EventType.VALUE, self._state.formattype, self.empty_value(self._state.formattype)))
-#                     self.events.append((prefix, EventType.VALUE, self._state.formattype, self.empty_value(self._state.formattype)))
+                    prefix = self.prefix[:]
+                    if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
+                        prefix.append('item')
+#                     self.events.append(('xxx', EventType.VALUE, self._state.formattype, self.empty_value(self._state.formattype)))
+                    self.events.append((prefix, EventType.VALUE, self._state.formattype, self.empty_value(self._state.formattype)))
                     self._scstate = ScannerState.SEGMENT_ENDED
                 
         
@@ -271,20 +271,20 @@ class StreamUnpacker():
         :param end:
         '''
         segmenttype = self._state.template.value.segmenttype
-#         prefix = self.prefix[:]
-#         if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
-#             prefix.append('item')
+        prefix = self.prefix[:]
+        if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
+            prefix.append('item')
         
         value = None
         eventtype = None
         ftype = self._state.formattype
         # parsing value 
-        if segmenttype in [SegmentType.HEADER_VALUE_PAIR, SegmentType.VARIABLE_LENGTH_VALUE, SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR]:
+        if segmenttype <= SegmentType.VARIABLE_LENGTH_VALUE:
             self._scstate = ScannerState.SEGMENT_ENDED
             value = self.parse_value(self._state.formattype, buff, start, end)
             eventtype = EventType.VALUE            
         # next we should expect length
-        elif segmenttype in [SegmentType.FIXED_EXT_FORMAT, SegmentType.EXT_FORMAT]:
+        elif segmenttype >= SegmentType.EXT_FORMAT:
             value = self.parse_ext_value(self._state.formattype, self._state.extcode, buff, start, end)
             eventtype = EventType.EXT
             ftype = ExtType(self._state.formattype, self._state.extcode)
@@ -292,11 +292,11 @@ class StreamUnpacker():
             raise InvalidStateException(self._scstate, "header")
                   
         if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 2 and self._stack[-1].remaining % 2 is 0:
-                self.events.append((['xxx'], EventType.MAP_PROPERTY_NAME, ftype, value))
-#                 self.events.append((prefix, EventType.MAP_PROPERTY_NAME, ftype, value))
+#                 self.events.append((['xxx'], EventType.MAP_PROPERTY_NAME, ftype, value))
+                self.events.append((prefix, EventType.MAP_PROPERTY_NAME, ftype, value))
         else:
-#             self.events.append((prefix, eventtype, ftype, value))
-            self.events.append(('xxx', eventtype, ftype, value))
+            self.events.append((prefix, eventtype, ftype, value))
+#             self.events.append(('xxx', eventtype, ftype, value))
     
     def handle_read_header(self, byte):
         '''
@@ -335,8 +335,8 @@ class StreamUnpacker():
             self._state = ParserState(frmt, template, length=length , isdone=False);
             if self._state.template.value.valuetype is ValueType.NESTED:                
                 self.events.append((self.prefix[:], self._state.template.value.startevent, frmt, None))
-#                 if template.value.multiplier is 1:
-#                     self.prefix.append('item')
+                if template.value.multiplier is 1:
+                    self.prefix.append('item')
                 if length is 0:
                     self._scstate = ScannerState.SEGMENT_ENDED
                 else:
@@ -375,11 +375,11 @@ class StreamUnpacker():
         self._state.extcode = extcode
         self._scstate = ScannerState.WAITING_FOR_VALUE
         if self._state.length is 0:  # it is an empty nested segment
-#             prefix = self.prefix[:]
-#             if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
-#                 prefix.append('item')
-#             self.events.append((prefix, EventType.EXT, ExtType(self._state.formattype, self._state.extcode), b''))
-            self.events.append(('xxx', EventType.EXT, ExtType(self._state.formattype, self._state.extcode), b''))
+            prefix = self.prefix[:]
+            if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
+                prefix.append('item')
+            self.events.append((prefix, EventType.EXT, ExtType(self._state.formattype, self._state.extcode), b''))
+#             self.events.append(('xxx', EventType.EXT, ExtType(self._state.formattype, self._state.extcode), b''))
             self._scstate = ScannerState.SEGMENT_ENDED
         
         
@@ -403,15 +403,15 @@ class StreamUnpacker():
             self._scstate = ScannerState.IDLE            
             return         
         self._stack[-1].remaining = self._stack[-1].remaining - 1
-#         if self._stack[-1].template.value.multiplier is 2:
-#             if  self._stack[-1].remaining % 2 is 1:
-#                 self.prefix.append(self.events[-1][3])
-#             else:
-#                 self.prefix.pop()
+        if self._stack[-1].template.value.multiplier is 2:
+            if  self._stack[-1].remaining % 2 is 1:
+                self.prefix.append(self.events[-1][3])
+            else:
+                self.prefix.pop()
             
         if self._stack[-1].remaining is 0:
-#             if self._stack[-1].template.value.multiplier is 1:
-#                     self.prefix.pop()
+            if self._stack[-1].template.value.multiplier is 1:
+                    self.prefix.pop()
             self._scstate = ScannerState.SEGMENT_ENDED
             self.pop_state()
             self.handle_segment_ended()
@@ -462,18 +462,16 @@ class StreamUnpacker():
         :param start:
         :param end:
         '''
-        if(formattype in [FormatType.STR_16, FormatType.STR_8, FormatType.STR_32, FormatType.FIXSTR]):
+        if formattype.value.idx <= FormatType.FIXSTR.value.idx:  # @UndefinedVariable
             return self.parse_str(buff, start, end)
-        elif(formattype in [ FormatType.INT_16, FormatType.INT_32, FormatType.INT_64, FormatType.INT_8, FormatType.UINT_16]):
+        if formattype.value.idx <= FormatType.INT_64.value.idx: 
             return self.parse_int(buff, start, end)
-        elif(formattype in [ FormatType.UINT_16, FormatType.UINT_32, FormatType.UINT_8, FormatType.UINT_64]):
+        if formattype.value.idx <= FormatType.UINT_64.value.idx:
             return self.parse_uint(buff, start, end)
-        elif(formattype in [ FormatType.FLOAT_32]):
+        elif(formattype == FormatType.FLOAT_32):
             return self.parse_float32(buff, start, end)
-        elif(formattype in [  FormatType.FLOAT_64]):
+        elif(formattype == FormatType.FLOAT_64):
             return self.parse_float64(buff, start, end)
-        elif(formattype in [  FormatType.BIN_8, FormatType.BIN_16, FormatType.BIN_32]):
-            return self.parse_bin(buff, start, end)
     
     def parse_uint(self, buff, start, end):
         '''

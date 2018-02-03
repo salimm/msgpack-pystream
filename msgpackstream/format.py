@@ -10,76 +10,80 @@ from abc import ABCMeta
 
 class Format():
     
-    def __init__(self, code, mask):
+    def __init__(self, idx, code, mask):
+        self.idx = idx
         self.code = code
         self.mask = mask
         
         
     def __str__(self):
-        return "{ code: " + self.code + ", mask: " + self.mask + " }"
+        return "{ idx: " + str(self.id) + " code: " + str(self.code) + ", mask: " + str(self.mask) + " }"
 
 
 class FormatType(Enum):
     
-    POS_FIXINT = Format(0x00 , 0x80)
-    NEG_FIXINT = Format(0xE0 , 0xE0)
+    POS_FIXINT = Format(36, 0x00 , 0x80)
+    NEG_FIXINT = Format(37, 0xE0 , 0xE0)
     
-    FIXMAP = Format(0x80 , 0xF0)
-    FIXARRAY = Format(0x90 , 0xF0)
-    FIXSTR = Format(0xA0 , 0xE0)
+    FIXMAP = Format(21, 0x80 , 0xF0)
+    FIXARRAY = Format(20, 0x90 , 0xF0)
+    FIXSTR = Format(7, 0xA0 , 0xE0)
     
-    NIL = Format(0xC0 , 0xFF)
-    NEVER_USED = Format(0xC1 , 0xFF)
+    NIL = Format(34, 0xC0 , 0xFF)
+    NEVER_USED = Format(35, 0xC1 , 0xFF)
     
-    FALSE = Format(0xC2 , 0xFF)
-    TRUE = Format(0xC3 , 0xFF)
+    FALSE = Format(32, 0xC2 , 0xFF)
+    TRUE = Format(33, 0xC3 , 0xFF)
     
-    BIN_8 = Format(0xC4 , 0xFF)
-    BIN_16 = Format(0xC5 , 0xFF)
-    BIN_32 = Format(0xC6 , 0xFF)
+    BIN_8 = Format(1, 0xC4 , 0xFF)
+    BIN_16 = Format(2, 0xC5 , 0xFF)
+    BIN_32 = Format(3, 0xC6 , 0xFF)
     
-    EXT_8 = Format(0xC7 , 0xFF)
-    EXT_16 = Format(0xC8 , 0xFF)
-    EXT_32 = Format(0xC9 , 0xFF)
+    EXT_8 = Format(29, 0xC7 , 0xFF)
+    EXT_16 = Format(30, 0xC8 , 0xFF)
+    EXT_32 = Format(31, 0xC9 , 0xFF)
     
     
-    FLOAT_32 = Format(0xCA , 0xFF)
-    FLOAT_64 = Format(0xCB , 0xFF)
+    FLOAT_32 = Format(16, 0xCA , 0xFF)
+    FLOAT_64 = Format(17, 0xCB , 0xFF)
     
-    UINT_8 = Format(0xCC , 0xFF)
-    UINT_16 = Format(0xCD , 0xFF)
-    UINT_32 = Format(0xCE , 0xFF)
-    UINT_64 = Format(0xCF , 0xFF)
+    UINT_8 = Format(12, 0xCC , 0xFF)
+    UINT_16 = Format(13, 0xCD , 0xFF)
+    UINT_32 = Format(14, 0xCE , 0xFF)
+    UINT_64 = Format(15, 0xCF , 0xFF)
     
-    INT_8 = Format(0xD0 , 0xFF)
-    INT_16 = Format(0xD1 , 0xFF)
-    INT_32 = Format(0xD2 , 0xFF)
-    INT_64 = Format(0xD3 , 0xFF)
+    INT_8 = Format(8, 0xD0 , 0xFF)
+    INT_16 = Format(9, 0xD1 , 0xFF)
+    INT_32 = Format(10, 0xD2 , 0xFF)
+    INT_64 = Format(11, 0xD3 , 0xFF)
     
-    FIXEXT_1 = Format(0xD4 , 0xFF)
-    FIXEXT_2 = Format(0xD5 , 0xFF)
-    FIXEXT_4 = Format(0xD6 , 0xFF)
-    FIXEXT_8 = Format(0xD7 , 0xFF)
-    FIXEXT_16 = Format(0xD8 , 0xFF)
+    FIXEXT_1 = Format(24, 0xD4 , 0xFF)
+    FIXEXT_2 = Format(25, 0xD5 , 0xFF)
+    FIXEXT_4 = Format(26, 0xD6 , 0xFF)
+    FIXEXT_8 = Format(27, 0xD7 , 0xFF)
+    FIXEXT_16 = Format(28, 0xD8 , 0xFF)
     
-    STR_8 = Format(0xD9 , 0xFF)
-    STR_16 = Format(0xDA , 0xFF)
-    STR_32 = Format(0xDB , 0xFF)
+    STR_8 = Format(4, 0xD9 , 0xFF)
+    STR_16 = Format(5, 0xDA , 0xFF)
+    STR_32 = Format(6, 0xDB , 0xFF)
     
-    ARRAY_16 = Format(0xDC , 0xFF)
-    ARRAY_32 = Format(0xDD , 0xFF)
+    ARRAY_16 = Format(18, 0xDC , 0xFF)
+    ARRAY_32 = Format(19, 0xDD , 0xFF)
     
-    MAP_16 = Format(0xDE , 0xFF)
-    MAP_32 = Format(0xDF , 0xFF)
+    MAP_16 = Format(22, 0xDE , 0xFF)
+    MAP_32 = Format(23, 0xDF , 0xFF)
     
        
     
 class SegmentType():
     
-    SINGLE_BYTE = 1  # head contain value
-    HEADER_VALUE_PAIR = 2  # one header and multiple bytes for value
-    HEADER_WITH_LENGTH_VALUE_PAIR = 3  # one header, it also includes length of value paired with value which of variable length
-    VARIABLE_LENGTH_VALUE = 4  # 1 byte for header, multiple bytes for number of items, items
+    HEADER_VALUE_PAIR = 1  # one header and multiple bytes for value
+    HEADER_WITH_LENGTH_VALUE_PAIR = 2  # one header, it also includes length of value paired with value which of variable length
+    VARIABLE_LENGTH_VALUE = 3  # 1 byte for header, multiple bytes for number of items, items
+    
+    SINGLE_BYTE = 4  # head contain value
+    
+    
     EXT_FORMAT = 5
     FIXED_EXT_FORMAT = 6
     

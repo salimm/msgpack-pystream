@@ -178,7 +178,7 @@ class StreamUnpacker():
         while self._available >= self._advance:
             
             # expected start of a new segment
-            if self._scstate in [ScannerState.IDLE, ScannerState.WAITING_FOR_HEADER]:
+            if self._scstate.value <= ScannerState.WAITING_FOR_HEADER.value:
                 self._advance = 1
                 byte = ord(self.memory[idx])
                 t1 = time.time()
@@ -441,19 +441,20 @@ class StreamUnpacker():
         :param start:
         :param end:
         '''
-        if(formattype in [FormatType.STR_16, FormatType.STR_8, FormatType.STR_32, FormatType.FIXSTR]):
-            return ''
-        elif(formattype in [ FormatType.INT_16, FormatType.INT_32, FormatType.INT_64, FormatType.INT_8, FormatType.UINT_16]):
-            return 0
-        elif(formattype in [ FormatType.UINT_16, FormatType.UINT_32, FormatType.UINT_8, FormatType.UINT_64]):
-            return 0
-        elif(formattype in [ FormatType.FLOAT_32]):
-            return float(0)
-        elif(formattype in [  FormatType.FLOAT_64]):
-            return float(0)
-        elif(formattype in [  FormatType.BIN_8, FormatType.BIN_16, FormatType.BIN_32]):
+        if formattype.value.idx <= FormatType.BIN_32.value.idx:  # @UndefinedVariable
             return b''
-        
+        elif formattype.value.idx <= FormatType.FIXSTR.value.idx:  # @UndefinedVariable  
+            return ''
+        elif formattype.value.idx <= FormatType.INT_64.value.idx:  # @UndefinedVariable
+            return 0
+        elif formattype.value.idx <= FormatType.UINT_64.value.idx:  # @UndefinedVariable
+            return 0
+        elif(formattype == FormatType.FLOAT_32):
+            return float(0)
+        elif(formattype == FormatType.FLOAT_64):
+            return float(0)
+    
+    
     def parse_value(self, formattype, buff, start, end):
         '''
             parse the value from the buffer given the interval for the appropraite bytes
@@ -462,11 +463,11 @@ class StreamUnpacker():
         :param start:
         :param end:
         '''
-        if formattype.value.idx <= FormatType.FIXSTR.value.idx:  # @UndefinedVariable
+        if formattype.value.idx <= FormatType.FIXSTR.value.idx:  # @UndefinedVariable  
             return self.parse_str(buff, start, end)
-        if formattype.value.idx <= FormatType.INT_64.value.idx: 
+        elif formattype.value.idx <= FormatType.INT_64.value.idx:  # @UndefinedVariable
             return self.parse_int(buff, start, end)
-        if formattype.value.idx <= FormatType.UINT_64.value.idx:
+        elif formattype.value.idx <= FormatType.UINT_64.value.idx:  # @UndefinedVariable
             return self.parse_uint(buff, start, end)
         elif(formattype == FormatType.FLOAT_32):
             return self.parse_float32(buff, start, end)

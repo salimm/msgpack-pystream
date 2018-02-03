@@ -192,16 +192,30 @@ class HeaderWithLengthValueTest(unittest.TestCase):
             
             
     def test_map16(self):
+        tmp = b'\xDE\x80\x00'
         length = int(math.pow(2, 15))
-        a = {}
         for i in range(length):
-            a['f' + str(i)] = 1
+            l = len(str(i)) + 1
+            if l == 1:
+                tmp += b'\xa1'
+            elif l == 2:
+                tmp += b'\xa2'
+            elif l == 3:
+                tmp += b'\xa3'
+            elif l == 4:
+                tmp += b'\xa4'
+            elif l == 5:
+                tmp += b'\xa5'
+            elif l == 6:
+                tmp += b'\xa6'    
+            elif l == 6:
+                tmp += b'\xa6' 
+            tmp += b'f' + str(i) + b'\x01'
         
-        events = [e for e in unpack(self.create_instream(msgpack.packb(a)))]
+        events = [e for e in unpack(self.create_instream(tmp))]
         
-#         for e in events:
-#             print(e)
-        self.assertEqual(length*2 + 2, len(events))
+#         print(events[-1])
+        self.assertEqual(length * 2 + 2, len(events))
         
         self.assertEqual(FormatType.MAP_16, events[0][2])
         self.assertEqual(FormatType.MAP_16, events[-1][2])
@@ -213,7 +227,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         self.assertEqual(None, events[-1][3])
         
         field = None;
-        for i in range(length*2):
+        for i in range(length * 2):
             if i % 2 is 0:
                 self.assertEqual([], events[i + 1][0])
                 self.assertEqual(EventType.MAP_PROPERTY_NAME, events[i + 1][1])
@@ -222,7 +236,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
             else:
                 self.assertEqual([field], events[i + 1][0])
                 self.assertEqual(EventType.VALUE, events[i + 1][1])
-                self.assertEqual(FormatType.POS_FIXINT, events[i+ 1][2])
+                self.assertEqual(FormatType.POS_FIXINT, events[i + 1][2])
         
     def test_map32_empty(self):
         events = [e for e in unpack(self.create_instream(b'\xDF\x00\x00\x00\x00'))]
@@ -243,7 +257,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         
         events = [e for e in unpack(self.create_instream(msgpack.packb(a)))]
         
-        self.assertEqual(len(a)*2 + 2, len(events))
+        self.assertEqual(len(a) * 2 + 2, len(events))
         
         self.assertEqual(FormatType.MAP_32, events[0][2])
         self.assertEqual(FormatType.MAP_32, events[-1][2])
@@ -255,7 +269,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         self.assertEqual(None, events[-1][3])
         
         field = None;
-        for i in range(length*2):
+        for i in range(length * 2):
             if i % 2 is 0:
                 self.assertEqual([], events[i + 1][0])
                 self.assertEqual(EventType.MAP_PROPERTY_NAME, events[i + 1][1])
@@ -264,7 +278,7 @@ class HeaderWithLengthValueTest(unittest.TestCase):
             else:
                 self.assertEqual([field], events[i + 1][0])
                 self.assertEqual(EventType.VALUE, events[i + 1][1])
-                self.assertEqual(FormatType.POS_FIXINT, events[i+ 1][2])
+                self.assertEqual(FormatType.POS_FIXINT, events[i + 1][2])
         
     
 

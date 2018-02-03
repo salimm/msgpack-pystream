@@ -110,13 +110,13 @@ class Template():
 
 class EventType(Enum):
     
-    VALUE = 1                   #value event
-    ARRAY_START = 2             #event that indicates start of an array
-    ARRAY_END = 3               #event that indicates end of an array
-    MAP_START = 4               #event that indicates start of a map
-    MAP_END = 5                 #event that indicates end of a map
-    MAP_PROPERTY_NAME = 6       #event that indicates property name
-    EXT = 7                     #event that indicates ext value
+    VALUE = 1  # value event
+    ARRAY_START = 2  # event that indicates start of an array
+    ARRAY_END = 3  # event that indicates end of an array
+    MAP_START = 4  # event that indicates start of a map
+    MAP_END = 5  # event that indicates end of a map
+    MAP_PROPERTY_NAME = 6  # event that indicates property name
+    EXT = 7  # event that indicates ext value
               
     
 class TemplateType(Enum):
@@ -240,6 +240,11 @@ class FormatUtil():
         templist = list(TemplateType)
         for t in templist:
             self._templatemap[t.value.formattype.value.code] = t
+        
+        self._formatmap = {}
+        templist = list(FormatType)
+        for t in templist:
+            self._formatmap[t.value.code] = t
     
     
     def match(self, val, ftype):
@@ -256,13 +261,32 @@ class FormatUtil():
         if(ftype is FormatType.TRUE):
             return True        
         if(ftype is FormatType.NEG_FIXINT):
-            return self.twos_comp(code & ~ftype.value.mask,5)
+            return self.twos_comp(code & ~ftype.value.mask, 5)
         return code & ~ftype.value.mask
         
     def find(self, code):
-        for ftype in self._typelist:
-            if self.match(code, ftype):
-                return ftype
+        
+        firstbits = code & 0xF0
+#         print(str(firstbits) + "  " + str(code))
+        if  firstbits < 0x80:
+            return FormatType.POS_FIXINT
+        elif  code < 0xC0:
+            if firstbits == FormatType.FIXSTR.value.code:
+                return FormatType.FIXSTR
+            elif firstbits == FormatType.FIXARRAY.value.code:
+                return  FormatType.FIXARRAY
+            elif firstbits == FormatType.FIXMAP.value.code:
+                return  FormatType.FIXMAP
+        else:
+            if firstbits >= FormatType.NEG_FIXINT.value.code:
+                return FormatType.NEG_FIXINT
+            else:
+                return self._formatmap[code]
+        
+#         
+#         for ftype in self._typelist:
+#             if self.match(code, ftype):
+#                 return ftype
     
     def find_template(self, code):
         return self._templatemap[code]

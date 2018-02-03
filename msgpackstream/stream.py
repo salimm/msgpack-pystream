@@ -13,6 +13,7 @@ import binascii
 import struct
 from msgpackstream.errors import InvalidStateException
 import datetime
+import time
 
 
 
@@ -103,7 +104,7 @@ class TimestampParser(ExtTypeParser):
         :param start:
         :param end:
         '''
-        buff.seek(start)
+#         buff.seek(start)
         return int(binascii.hexlify(buff.read((end - start))), 16)
     
     def parse_int(self, buff, start, end):
@@ -142,10 +143,18 @@ class StreamUnpacker():
         self.prefix = []
         self.events = []
         self.memory = BytesIO()
-        self.lastidx = 0;
         self._deserializers = {}
         self.register(TimestampParser())
+        self._available = 0
+        self.timeheader = 0
+        self.timevalue = 0
+        self.timelength = 0
+        self.timetop = 0
+        self.timebottom = 0
+        self.timeheaders = [0, 0, 0, 0, 0, 0, 0,0]
         
+    
+    
     
     
     def process(self, buff):
@@ -154,53 +163,79 @@ class StreamUnpacker():
             The function will buffer what will require extra bytes to be processed. 
         :param buff:
         '''
-        
+        t1 = time.time()
+        # adding the current to the available
+        self._available += len(buff)
         # prepare pointers and inputs
         idx = self.memory.tell()
+#         print("??"+str(idx)+"")
+        self.memory.seek(len(self.memory.getvalue()))
         self.memory.write(buff)
         self.memory.seek(idx)
+        advance = 1
             
         # read first byte 
-        byte = self.memory.read(1)
+#         byte = self.memory.read(1)
         
+        self.timetop += time.time() - t1
+        
+        
+#         print('%%% --- ' + str(advance) + "---" +str(self._available)+"  "+str(self.memory.tell()))
         # process input while exists
-        while byte:
-            byte = ord(byte)
+        while self._available >= advance:
             
             # expected start of a new segment
             if self._scstate in [ScannerState.IDLE, ScannerState.WAITING_FOR_HEADER]:
+                byte = ord(self.memory.read(1))
+                t1 = time.time()
                 self.handle_read_header(byte)
-                self.lastidx = idx + 1
+                self.timeheader += time.time() - t1
             # the scanner expects to read one or multiple bytes that contain an 
             # integer contain the length of the value to be expected
             elif self._scstate is ScannerState.WAITING_FOR_LENGTH:
-                self._state.remaining -= 1;  # decrease number of remaining bytes to get length
-                if(self._state.remaining == 0):  # if no more bytes remaining
-                    self.handle_read_length(self.memory, self.lastidx, idx + 1)
-                    self.lastidx = idx + 1
+                t1 = time.time()
+#                 self._state.remaining -= 1;  # decrease number of remaining bytes to get length
+                # breaking if not available
+                if self._available < self._state.remaining:
+#                     print('&&--- ' + str(advance) + "---" +str(self._available))
+                    break
+                
+                advance = self._state.remaining
+                self.handle_read_length(self.memory, idx, idx + advance)
+                self.timelength += time.time() - t1
+                
             # if the scanner is expecting to parse one or multiple bytes as the value of the segment
             elif self._scstate is ScannerState.WAITING_FOR_VALUE:
-                self._state.remaining -= 1;                               
-                if(self._state.remaining == 0):
-                    self.handle_read_value(self.memory, self.lastidx, idx + 1)
-                    self.lastidx = idx + 1
+                t1 = time.time()
+                advance = self._state.remaining
+                if self._available < advance:
+#                     print('&&--- ' + str(advance) + "---" +str(self._available))
+                    break
+                self.handle_read_value(self.memory, idx, idx + advance)
+                self.timevalue += time.time() - t1
             # if the scanner is expecting to parse an extension
             elif self._scstate is ScannerState.WAITING_FOR_EXT_TYPE:
                 self.handle_read_ext_type(self.memory, idx)
-                self.lastidx = idx + 1
             
             # if a data segment is ended
             if self._scstate is ScannerState.SEGMENT_ENDED:
                 self.handle_segment_ended()                
-            # proceed with scanning   
-            idx = idx + 1
-            byte = self.memory.read(1)
+            # proceed with scanning
             
-        # not finished processing all since it needed extra info     
-        if self.lastidx is idx:
+            self._available -= advance   
+#             print('--- ' + str(advance) + "---" +str(self._available)+"  "+str(self.memory.tell()))
+            idx = idx + advance
+            advance = 1
+        
+        t1 = time.time()
+#         print('^^--- ' + str(advance) + "---" +str(self._available)+"   "+str(self.memory.tell()))
+        #  finished processing all since it needed extra info     
+        if self._available == 0 :
             self.memory = BytesIO()
-            self.lastidx = 0
-                
+#         else:
+#             self.memory.seek(self.memory.tell() - 1)
+        
+        self.timebottom += time.time() - t1
         
     
     def handle_read_length(self, buff, start, end):        
@@ -211,6 +246,7 @@ class StreamUnpacker():
         :param end:
         '''
         self._state.length = self.parse_uint(buff, start, end) * self._state.template.value.multiplier
+#         print(self._state.length)
     
         if self.current_state().template.value.valuetype is ValueType.NESTED:
             self.events.append((self.prefix[:], self._state.template.value.startevent, self._state.formattype, None))
@@ -274,20 +310,33 @@ class StreamUnpacker():
         :param byte:
         '''
         
+        
+        t1 = time.time()
         frmt = self.util.find(byte)
+        self.timeheaders[0] += time.time() - t1
+        t1 = time.time()
         template = self.util.find_template(frmt.value.code)
+        self.timeheaders[1] += time.time() - t1
+        
         segmenttype = template.value.segmenttype        
         # single byte segment
+       
         if segmenttype is SegmentType.SINGLE_BYTE:
+            t1 = time.time()
             self._scstate = ScannerState.SEGMENT_ENDED
             self._state = ParserState(frmt, template, isdone=True);
             self.events.append((self.prefix[:], EventType.VALUE, frmt, self.util.get_value(byte, frmt)))
+            self.timeheaders[2] += time.time() - t1
+            
         # next we should expect value
         elif segmenttype is SegmentType.HEADER_VALUE_PAIR:
+            t1 = time.time()
             self._scstate = ScannerState.WAITING_FOR_VALUE
-            self._state = ParserState(frmt, template, length=template.value.length * template.value.multiplier , isdone=False);            
+            self._state = ParserState(frmt, template, length=template.value.length * template.value.multiplier , isdone=False);
+            self.timeheaders[3] += time.time() - t1            
         # next we should expect value
         elif segmenttype is SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR:
+            t1 = time.time()
             length = self.util.get_value(byte, frmt) * template.value.multiplier
             self._state = ParserState(frmt, template, length=length , isdone=False);
             if self._state.template.value.valuetype is ValueType.NESTED:                
@@ -305,19 +354,25 @@ class StreamUnpacker():
                     self._scstate = ScannerState.SEGMENT_ENDED
                 else:
                     self._scstate = ScannerState.WAITING_FOR_VALUE
-            
+            self.timeheaders[4] += time.time() - t1
         # next we should expect length
         elif segmenttype is SegmentType.VARIABLE_LENGTH_VALUE:
+            t1 = time.time()
             self._scstate = ScannerState.WAITING_FOR_LENGTH
             self._state = ParserState(frmt, template, length=template.value.length , isdone=False);
+            self.timeheaders[5] += time.time() - t1
         # next we should expect length
         elif segmenttype is SegmentType.EXT_FORMAT:
+            t1 = time.time()
             self._scstate = ScannerState.WAITING_FOR_LENGTH
             self._state = ParserState(frmt, template, length=template.value.length , isdone=False);
+            self.timeheaders[6] += time.time() - t1
         # next we should expect type       
         elif segmenttype is SegmentType.FIXED_EXT_FORMAT:
+            t1 = time.time()
             self._state = ParserState(frmt, template, length=template.value.length , isdone=False);
             self._scstate = ScannerState.WAITING_FOR_EXT_TYPE
+            self.timeheaders[7] += time.time() - t1
         else:
             raise InvalidStateException(self._scstate, "header")
         
@@ -335,7 +390,7 @@ class StreamUnpacker():
         
         
     def parse_ext_value(self, formattype, extcode, buff, start, end):
-        buff.seek(start)
+#         buff.seek(start)
         parser = self._deserializers.get(extcode, None)
         if parser:
             return parser.deserialize(ExtType(formattype, extcode), buff, start , end)
@@ -433,7 +488,7 @@ class StreamUnpacker():
         :param start:
         :param end:
         '''
-        buff.seek(start)
+#         buff.seek(start)
         return int(binascii.hexlify(buff.read((end - start))), 16)
     
     def parse_int(self, buff, start, end):
@@ -454,7 +509,6 @@ class StreamUnpacker():
         :param start:
         :param end:
         '''
-        buff.seek(start)
         return struct.unpack('>f', buff.read((end - start)))[0]
     
     def parse_float64(self, buff, start, end):
@@ -464,7 +518,7 @@ class StreamUnpacker():
         :param start:
         :param end:
         '''
-        buff.seek(start)
+#         buff.seek(end)
         return struct.unpack('>d', buff.read((end - start)))[0]
     
     def twos_comp(self, val, bits):
@@ -485,7 +539,7 @@ class StreamUnpacker():
         :param start:
         :param end:
         '''
-        buff.seek(start)
+#         buff.seek(start)
         return buff.read((end - start)) 
     
     def parse_bin(self, buff, start, end):
@@ -496,7 +550,7 @@ class StreamUnpacker():
         :param start:
         :param end:
         '''
-        buff.seek(start)
+#         buff.seek(start)
         return buff.read((end - start)) 
     
     
@@ -531,7 +585,7 @@ class StreamUnpacker():
         
 
 
-def unpack(instream, buffersize=1000, parsers=[]):
+def unpack(instream, buffersize=5000, parsers=[]):
     '''
         Creates an iterator instance for the unpacker
     :param instream:
@@ -544,7 +598,7 @@ def unpack(instream, buffersize=1000, parsers=[]):
     
 class UnpackerIterator(object):
     
-    def __init__(self, instream, buffersize=1000, parsers=[]):
+    def __init__(self, instream, buffersize=5000, parsers=[]):
         self._instream = instream
         self._unpacker = StreamUnpacker()
         for parser in parsers:
@@ -564,6 +618,8 @@ class UnpackerIterator(object):
                 self._idx = 0
                 bytes_read = self._instream.read(self._buffersize)
                 if not bytes_read:
+                    print("header: " + str(self._unpacker.timeheader) + "length: " + str(self._unpacker.timelength) + "value: " + str(self._unpacker.timevalue) + "  top: " + str(self._unpacker.timetop) + "  bottom: " + str(self._unpacker.timebottom))
+                    print("headers: " + str(self._unpacker.timeheaders))
                     raise StopIteration()
                 self._unpacker.process(bytes_read)
                 self._events = self._unpacker.generate_events()

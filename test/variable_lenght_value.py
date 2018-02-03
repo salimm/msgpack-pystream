@@ -199,7 +199,9 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         
         events = [e for e in unpack(self.create_instream(msgpack.packb(a)))]
         
-        self.assertEqual(len(a)*2 + 2, len(events))
+#         for e in events:
+#             print(e)
+        self.assertEqual(length*2 + 2, len(events))
         
         self.assertEqual(FormatType.MAP_16, events[0][2])
         self.assertEqual(FormatType.MAP_16, events[-1][2])

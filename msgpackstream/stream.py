@@ -150,6 +150,7 @@ class StreamUnpacker():
         self.timevalue = 0
         self.timelength = 0
         self.timetop = 0
+        self.htime = 0
         self.timebottom = 0
         self.timeheaders = [0, 0, 0, 0, 0, 0, 0, 0]
         self._advance = 1
@@ -173,7 +174,6 @@ class StreamUnpacker():
         # read first byte 
         
         self.timetop += time.time() - t1
-#         print('%% --- ' + str(self._advance) + "---" +str(self._available)+"  ")
         # process input while exists
         while self._available >= self._advance:
             
@@ -202,7 +202,6 @@ class StreamUnpacker():
                     break
                 self.handle_read_value(self.memory, idx, idx + self._advance)
                 self.timevalue += time.time() - t1
-#                 print(self.events[-1])
             # if the scanner is expecting to parse an extension
             elif self._scstate is ScannerState.WAITING_FOR_EXT_TYPE:
                 self._advance = 1
@@ -215,15 +214,11 @@ class StreamUnpacker():
             
             self._available -= self._advance   
             idx = idx + self._advance
-#             print(' --- ' + str(self._advance) + "---" +str(self._available)+"  "+str(idx))
             self._advance = 1
         
         t1 = time.time()
-#         print('^^--- ' + str(advance) + "---" +str(self._available)+"   "+str(self.memory.tell()))
         #  finished processing all since it needed extra info     
-        self.memory = self.memory[idx:]
-#         else:
-#             self.memory.seek(self.memory.tell() - 1)
+        self.memory = buffer(self.memory, idx, len(self.memory))
         
         self.timebottom += time.time() - t1
         
@@ -237,7 +232,6 @@ class StreamUnpacker():
         :param end:
         '''
         self._state.length = self.parse_uint(buff, start, end) * self._state.template.value.multiplier
-#         print("---------" +str(self._state.length))
     
         if self.current_state().template.value.valuetype is ValueType.NESTED:
             self.events.append((self.prefix[:], self._state.template.value.startevent, self._state.formattype, None))
@@ -257,7 +251,6 @@ class StreamUnpacker():
                     prefix = self.prefix[:]
                     if len(self._stack) > 0 and self._stack[-1].template.value.multiplier is 1:
                         prefix.append('item')
-#                     self.events.append(('xxx', EventType.VALUE, self._state.formattype, self.empty_value(self._state.formattype)))
                     self.events.append((prefix, EventType.VALUE, self._state.formattype, self.empty_value(self._state.formattype)))
                     self._scstate = ScannerState.SEGMENT_ENDED
                 
@@ -307,6 +300,7 @@ class StreamUnpacker():
         
         t1 = time.time()
         frmt = self.util.find(byte)
+        self.htime += time.time() - t1
         self.timeheaders[0] += time.time() - t1
         t1 = time.time()
         template = self.util.find_template(frmt.value.code)
@@ -463,16 +457,16 @@ class StreamUnpacker():
         :param start:
         :param end:
         '''
+        if(formattype == FormatType.FLOAT_32):
+            return self.parse_float32(buff, start, end)
+        elif(formattype == FormatType.FLOAT_64):
+            return self.parse_float64(buff, start, end)
         if formattype.value.idx <= FormatType.FIXSTR.value.idx:  # @UndefinedVariable  
             return self.parse_str(buff, start, end)
         elif formattype.value.idx <= FormatType.INT_64.value.idx:  # @UndefinedVariable
             return self.parse_int(buff, start, end)
         elif formattype.value.idx <= FormatType.UINT_64.value.idx:  # @UndefinedVariable
             return self.parse_uint(buff, start, end)
-        elif(formattype == FormatType.FLOAT_32):
-            return self.parse_float32(buff, start, end)
-        elif(formattype == FormatType.FLOAT_64):
-            return self.parse_float64(buff, start, end)
     
     def parse_uint(self, buff, start, end):
         '''
@@ -480,9 +474,20 @@ class StreamUnpacker():
         :param buff:
         :param start:
         :param end:
+        
         '''
-#         buff.seek(start)
-        return int(binascii.hexlify(buff[start:end]), 16)
+        
+        l = end - start
+        if l == 1:
+            return struct.unpack_from('>B', buff, start)[0]
+        elif l == 2:
+            return struct.unpack_from('>H', buff, start)[0]
+        elif l == 4:
+            return struct.unpack_from('>L', buff, start)[0]
+        else :
+            return struct.unpack_from('>Q', buff, start)[0]
+        
+#         return int(binascii.hexlify(buff[start:end]), 16)
     
     def parse_int(self, buff, start, end):
         '''
@@ -596,25 +601,30 @@ class UnpackerIterator(object):
         self._buffersize = buffersize
         self._events = []
         self._idx = 0
+        self.time = 0
+        self.ptime = 0
     
     def __iter__(self):
         return self
 
     def __next__(self):
         if self._idx >= len(self._events):
+            t1 = time.time()
             self._events = []
-#             try:                
             while len(self._events) is 0:
                 self._idx = 0
                 bytes_read = self._instream.read(self._buffersize)
                 if not bytes_read:
-#                     print("header: " + str(self._unpacker.timeheader) + "length: " + str(self._unpacker.timelength) + "value: " + str(self._unpacker.timevalue) + "  top: " + str(self._unpacker.timetop) + "  bottom: " + str(self._unpacker.timebottom))
+                    print("header: " + str(self._unpacker.timeheader) + "length: " + str(self._unpacker.timelength) + "value: " + str(self._unpacker.timevalue) + "  top: " + str(self._unpacker.timetop) + "  bottom: " + str(self._unpacker.timebottom) + "  htime: " + str(self._unpacker.htime))
                     print("headers: " + str(self._unpacker.timeheaders))
+                    print("total time: " + str(self.time))
+                    print("total p time: " + str(self.ptime))
                     raise StopIteration()
+                t11 = time.time()
                 self._unpacker.process(bytes_read)
                 self._events = self._unpacker.generate_events()
-#             except :
-#                 raise StopIteration()
+                self.ptime += time.time() - t11
+            self.time += time.time() - t1
         event = self._events[self._idx]
         self._idx = self._idx + 1 
         return event

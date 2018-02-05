@@ -225,12 +225,13 @@ const PyObject * get_value(unsigned char byte, unsigned char code, unsigned char
 
 static PyObject * find_format(PyObject *self, PyObject *args){
     const char *byte;
+    struct Format f  ;
     
     if (!PyArg_ParseTuple(args, "s", &byte))
         return NULL;
         
     
-    struct Format f  = find_format_inner(byte[0]);
+    f = find_format_inner(byte[0]);
     // if (code ==0){
     //     return NULL;
     // }
@@ -240,12 +241,14 @@ static PyObject * find_format(PyObject *self, PyObject *args){
 
 static PyObject * find_format_code(PyObject *self, PyObject *args){
     const char *byte;
+    struct Format f;
+    
     
     if (!PyArg_ParseTuple(args, "s", &byte))
         return NULL;
         
     
-    struct Format f  = find_format_inner(byte[0]);
+    f  = find_format_inner(byte[0]);
     
     return Py_BuildValue("(i,i,i)",f.code, f.mask, f.idx);
 
@@ -254,12 +257,13 @@ static PyObject * find_format_code(PyObject *self, PyObject *args){
 
 static PyObject * parse_format_code(PyObject *self, PyObject *args){
     const char *byte;
+    struct Format f;
     
     if (!PyArg_ParseTuple(args, "s", &byte))
         return NULL;
     
     
-    struct Format f  = find_format_inner(byte[0]);
+    f = find_format_inner(byte[0]);
     
     const PyObject * val = get_value(byte[0], f.code, f.mask);
     return Py_BuildValue("(i,i,i,O)",f.code, f.mask, f.idx,val);

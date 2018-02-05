@@ -2,5 +2,6 @@
 setup.py
 msgpackstream/__init__.py
 msgpackstream/errors.py
+msgpackstream/findformat.c
 msgpackstream/format.py
 msgpackstream/stream.py

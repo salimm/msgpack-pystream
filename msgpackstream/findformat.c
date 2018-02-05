@@ -258,6 +258,7 @@ static PyObject * find_format_code(PyObject *self, PyObject *args){
 static PyObject * parse_format_code(PyObject *self, PyObject *args){
     const char *byte;
     struct Format f;
+    const PyObject * val;
     
     if (!PyArg_ParseTuple(args, "s", &byte))
         return NULL;
@@ -265,29 +266,29 @@ static PyObject * parse_format_code(PyObject *self, PyObject *args){
     
     f = find_format_inner(byte[0]);
     
-    const PyObject * val = get_value(byte[0], f.code, f.mask);
+    val = get_value(byte[0], f.code, f.mask);
     return Py_BuildValue("(i,i,i,O)",f.code, f.mask, f.idx,val);
 }
 
 
 
 
-static PyMethodDef FindMethods[] = {
-    
-    {"find_format",  find_format, METH_VARARGS,
-     "find_format..."},
-     {"find_format_code",  find_format_code, METH_VARARGS,
-     "find_format_code..."},
-    {"parse_format_code",  parse_format_code, METH_VARARGS,
-        "parse_format_code..."},
-    
-    {NULL, NULL, 0, NULL}        /* Sentinel */
-};
-
 
 PyMODINIT_FUNC
 initmsgpackfinder(void)
 {
+    static PyMethodDef FindMethods[] = {
+        
+        {"find_format",  find_format, METH_VARARGS,
+            "find_format..."},
+        {"find_format_code",  find_format_code, METH_VARARGS,
+            "find_format_code..."},
+        {"parse_format_code",  parse_format_code, METH_VARARGS,
+            "parse_format_code..."},
+        
+        {NULL, NULL, 0, NULL}        /* Sentinel */
+    };
+
     (void) Py_InitModule("msgpackfinder", FindMethods);
 }
 

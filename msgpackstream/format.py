@@ -5,6 +5,7 @@ Created on Nov 13, 2017
 '''
 from enum import Enum
 from abc import ABCMeta
+import msgpackfinder
 
 
 
@@ -245,19 +246,29 @@ class FormatUtil():
         for t in templist:
             self._templatemap[t.value.formattype.value.code] = t
         
+        self._templatelist = templist
+        self._templatelist = sorted(self._templatelist, key=lambda tmp: tmp.value.formattype.value.idx)
+        
         self._formatmap = {}
         templist = list(FormatType)
         for t in templist:
             self._formatmap[t.value.code] = t
+            
+        self._formatlist = templist        
+        self._formatlist = sorted(self._formatlist, key=lambda frmt: frmt.value.idx)
+        
+        self.emptyvals = {}
+        for t in templist:
+            self.emptyvals[t.value.code] = self._empty_value(t);
+            
+        
     
     
     def match(self, val, ftype):
         return (val & ftype.value.mask) == ftype.value.code
     
     
-    def get_value(self, code, ftype=None):
-        if(ftype is None):
-            ftype = self.find(code)
+    def get_value(self, code, ftype):
         if(ftype is FormatType.NIL):
             return None
         if(ftype is FormatType.FALSE):
@@ -270,30 +281,75 @@ class FormatUtil():
         
     def find(self, code):
         
+#         firstbits = code & 0xF0
+         
+#         frmt = None
+#         if  firstbits < 0x80:
+#             frmt= FormatType.POS_FIXINT
+#         elif  code < 0xC0:
+#             if firstbits == FormatType.FIXSTR.value.code:
+#                 frmt= FormatType.FIXSTR
+#             elif firstbits == FormatType.FIXARRAY.value.code:
+#                 frmt=  FormatType.FIXARRAY
+#             elif firstbits == FormatType.FIXMAP.value.code:
+#                 frmt=  FormatType.FIXMAP
+#         else:
+#             if firstbits >= FormatType.NEG_FIXINT.value.code:
+#                 frmt= FormatType.NEG_FIXINT
+#             else:
+#                 frmt= self._formatmap[code]
+#                 
+#         return frmt
+        (frmtcode, frmtmask, frmtidx,val) = msgpackfinder.parse_format_code(code)
+        return  (self._formatmap[frmtcode], frmtcode, frmtmask, frmtidx,val)
+        
+            
+    def _empty_value(self, formattype):
+        '''
+            returns default empty value 
+        :param formattype:
+        :param buff:
+        :param start:
+        :param end:
+        '''
+        if formattype.value.idx <= FormatType.BIN_32.value.idx:  # @UndefinedVariable
+            return b''
+        elif formattype.value.idx <= FormatType.FIXSTR.value.idx:  # @UndefinedVariable  
+            return ''
+        elif formattype.value.idx <= FormatType.INT_64.value.idx:  # @UndefinedVariable
+            return 0
+        elif formattype.value.idx <= FormatType.UINT_64.value.idx:  # @UndefinedVariable
+            return 0
+        elif(formattype is FormatType.FLOAT_32):
+            return float(0)
+        elif(formattype is FormatType.FLOAT_64):
+            return float(0)
+    def find2(self, code):
+        
         firstbits = code & 0xF0
 #         print(str(firstbits) + "  " + str(code))
         if  firstbits < 0x80:
-            return FormatType.POS_FIXINT
+            return FormatType.POS_FIXINT.value.code
         elif  code < 0xC0:
             if firstbits == FormatType.FIXSTR.value.code:
-                return FormatType.FIXSTR
+                return FormatType.FIXSTR.value.code
             elif firstbits == FormatType.FIXARRAY.value.code:
-                return  FormatType.FIXARRAY
+                return  FormatType.FIXARRAY.value.code
             elif firstbits == FormatType.FIXMAP.value.code:
-                return  FormatType.FIXMAP
+                return  FormatType.FIXMAP.value.code
         else:
             if firstbits >= FormatType.NEG_FIXINT.value.code:
-                return FormatType.NEG_FIXINT
+                return FormatType.NEG_FIXINT.value.code
             else:
-                return self._formatmap[code]
+                code
         
 #         
 #         for ftype in self._typelist:
 #             if self.match(code, ftype):
 #                 return ftype
     
-    def find_template(self, code):
-        return self._templatemap[code]
+    def find_template(self, frmtidx):
+        return self._templatelist[frmtidx - 1]
     
     def twos_comp(self, val, bits):
         if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255

@@ -290,7 +290,7 @@ class StreamUnpacker():
             self._scstate = self.next_state_afterraw()
 #             self._scstate = ScannerState.SEGMENT_ENDED
             value = self.parse_value(self._state[0], buff, start, end)
-            eventtype = EventType.VALUE
+            eventtype = EventType.VALUE 
             #self.timevalues[1] += time.time() -t1
         # next we should expect length
         elif segmenttype >= SegmentType.EXT_FORMAT:
@@ -347,7 +347,6 @@ class StreamUnpacker():
             if self._state[1].value.valuetype is ValueType.NESTED:                
                 self.events.append((self._state[1].value.startevent, frmtcode, None))
                 if length is 0:
-                    self._scstate = self.next_state_afterraw()
                     self._scstate = ScannerState.SEGMENT_ENDED
                 else:
                     if template.value.multiplier is 2:
@@ -444,6 +443,9 @@ class StreamUnpacker():
                    
             self.handle_segment_ended()
         else:
+            if self._state[1].value.multiplier is 2:
+                self.parentismap = 1
+                self.waitingforprop = 1
             self._scstate = ScannerState.WAITING_FOR_HEADER
         
     

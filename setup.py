@@ -16,6 +16,6 @@ setup(
   download_url = 'http://github.com/salimm/msgpack-pystream/archive/1.0.3.tar.gz', # I'll explain this in a second
   keywords = ['python','msgpack','serialization','binary','fast'], # arbitrary keywords
   classifiers = ['Programming Language :: Python'],
-  install_requires=['msgpack','enum34'],
+  install_requires=['msgpack','enum34', ],
   ext_modules = [module1]
 )

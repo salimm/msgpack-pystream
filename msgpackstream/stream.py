@@ -11,7 +11,6 @@ from msgpackstream.format import FormatUtil, SegmentType, FormatType, ValueType,
 import struct
 from msgpackstream.errors import InvalidStateException
 import datetime
-import time
 
 
 

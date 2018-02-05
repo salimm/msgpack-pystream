@@ -142,17 +142,17 @@ class StreamUnpacker():
         self._deserializers = {}
         self.register(TimestampParser())
         self._available = 0
-        self.timeheader = 0
-        self.timevalue = 0
-        self.timelength = 0
-        self.timetop = 0
-        self.htime = 0
-        self.timebottom = 0
-        self.timesegend = 0
+#         self.timeheader = 0
+#         self.timevalue = 0
+#         self.timelength = 0
+#         self.timetop = 0
+#         self.htime = 0
+#         self.timebottom = 0
+#         self.timesegend = 0
         self.waitingforprop = 0
         self.parentismap = 0
-        self.timeheaders = [0, 0, 0, 0, 0, 0, 0, 0]
-        self.timevalues = [0, 0, 0, 0, 0, 0, 0, 0]
+#         self.timeheaders = [0, 0, 0, 0, 0, 0, 0, 0]
+#         self.timevalues = [0, 0, 0, 0, 0, 0, 0, 0]
         self._advance = 1
         self.ustructmap = {1:'>B', 2:'>H', 4:'>L', 8:'>Q'}
         self.structmap = {1:'>b', 2:'>h', 4:'>l', 8:'>q    '}
@@ -170,7 +170,7 @@ class StreamUnpacker():
         
         
         
-        t1 = time.time()
+        #t1 = time.time()
         # adding the current to the available
         self.memory = self.memory + buff 
         self._available = len(self.memory)
@@ -183,35 +183,35 @@ class StreamUnpacker():
         handlevalue = self.handle_read_value
         handleegend = self.handle_segment_ended
         
-        self.timetop += time.time() - t1
+#         self.timetop += time.time() - t1
         # process input while exists
         while self._available >= self._advance:
             
             # expected start of a new segment
             if self._scstate.value <= ScannerState.WAITING_FOR_HEADER.value:
-                t1 = time.time()
+                #t1 = time.time()
                 self._advance = 1
 #                 byte = ord(self.memory[idx])
                 handleheader(self.memory[idx])
-                self.timeheader += time.time() - t1
+                #self.timeheader += time.time() - t1
             # the scanner expects to read one or multiple bytes that contain an 
             # integer contain the length of the value to be expected
             elif self._scstate is ScannerState.WAITING_FOR_LENGTH:
-                t1 = time.time()
+                #t1 = time.time()
                 self._advance = self._state[3]
                 # breaking if not available
                 if self._available < self._state[3]:
                     break
                 handlelength(self.memory, idx, idx + self._advance)
-                self.timelength += time.time() - t1
+                #self.timelength += time.time() - t1
                 # if the scanner is expecting to parse one or multiple bytes as the value of the segment
             elif self._scstate is ScannerState.WAITING_FOR_VALUE:
-                t1 = time.time()
+                #t1 = time.time()
                 self._advance = self._state[3]
                 if self._available < self._advance:
                     break
                 handlevalue(self.memory, idx, idx + self._advance)
-                self.timevalue += time.time() - t1
+                #self.timevalue += time.time() - t1
             # if the scanner is expecting to parse an extension
             elif self._scstate is ScannerState.WAITING_FOR_EXT_TYPE:
                 self._advance = 1
@@ -219,20 +219,20 @@ class StreamUnpacker():
             
             # if a data segment is ended
             if self._scstate is ScannerState.SEGMENT_ENDED:
-                t1 = time.time() 
+                #t1 = time.time() 
                 handleegend()
-                self.timesegend += time.time() - t1             
+                #self.timesegend += time.time() - t1             
             # proceed with scanning
             
             self._available -= self._advance   
             idx = idx + self._advance
             self._advance = 1
         
-        t1 = time.time()
+        #t1 = time.time()
         #  finished processing all since it needed extra info     
         self.memory = buffer(self.memory, idx, len(self.memory))
         
-        self.timebottom += time.time() - t1
+        #self.timebottom += time.time() - t1
         
         
     
@@ -278,34 +278,33 @@ class StreamUnpacker():
         :param start:
         :param end:
         '''
-        t1 = time.time()
+        #t1 = time.time()
         segmenttype = self._state[1].value.segmenttype
         
         value = None
         eventtype = None
         ftype = self._state[0]
-        self.timevalues[0] += time.time() -t1
+        #self.timevalues[0] += time.time() -t1
         # parsing value 
         if segmenttype <= SegmentType.VARIABLE_LENGTH_VALUE:
-            t1 = time.time()
+            #t1 = time.time()
             self._scstate = self.next_state_afterraw()
-            self.timevalues[4] += time.time() -t1
 #             self._scstate = ScannerState.SEGMENT_ENDED
             value = self.parse_value(self._state[0], buff, start, end)
             eventtype = EventType.VALUE
-            self.timevalues[1] += time.time() -t1
+            #self.timevalues[1] += time.time() -t1
         # next we should expect length
         elif segmenttype >= SegmentType.EXT_FORMAT:
-            t1 = time.time()
+            #t1 = time.time()
             value = self.parse_ext_value(self._state[0], self._state[4], buff, start, end)
             eventtype = EventType.EXT
             ftype = ExtType(self._state[0], self._state[4])
-            self.timevalues[2] += time.time() -t1
+            #self.timevalues[2] += time.time() -t1
         else:
             raise InvalidStateException(self._scstate, "header")
-        t1 = time.time()
+        #t1 = time.time()
         self.events.append((self.value_event_type(eventtype), ftype, value))
-        self.timevalues[3] += time.time() -t1
+        #self.timevalues[3] += time.time() -t1
     
     def handle_read_header(self, byte):
         '''
@@ -313,12 +312,12 @@ class StreamUnpacker():
         :param byte:
         '''
         
-        t1 = time.time()
+        #t1 = time.time()
         (frmtx, frmtcode, frmtmask, frmtidx, val) = self.util.find(byte)
-        self.timeheaders[0] += time.time() - t1
-        t1 = time.time()
+        #self.timeheaders[0] += time.time() - t1
+        #t1 = time.time()
         template = self._templatelist[frmtidx - 1]
-        self.timeheaders[1] += time.time() - t1
+        #self.timeheaders[1] += time.time() - t1
         
         byte = ord(byte)
         
@@ -326,23 +325,23 @@ class StreamUnpacker():
         # single byte segment
        
         if segmenttype is SegmentType.SINGLE_BYTE:
-            t1 = time.time()
+            #t1 = time.time()
             self._scstate = self.next_state_afterraw()
 #             self._scstate = ScannerState.SEGMENT_ENDED
             self._state = self.create_state(frmtcode, template);
 #             self.events.append((self.value_event_type(EventType.VALUE), frmt, self.util.get_value(byte, frmt)))
             self.events.append((self.value_event_type(EventType.VALUE), frmtcode, val))
-            self.timeheaders[2] += time.time() - t1
+            #self.timeheaders[2] += time.time() - t1
             
         # next we should expect value
         elif segmenttype is SegmentType.HEADER_VALUE_PAIR:
-            t1 = time.time()
+            #t1 = time.time()
             self._scstate = ScannerState.WAITING_FOR_VALUE
             self._state = self.create_state(frmtcode, template, length=template.value.length * template.value.multiplier);
-            self.timeheaders[3] += time.time() - t1            
+            #self.timeheaders[3] += time.time() - t1            
         # next we should expect value
         elif segmenttype is SegmentType.HEADER_WITH_LENGTH_VALUE_PAIR:
-            t1 = time.time()
+            #t1 = time.time()
             length = val * template.value.multiplier
 #             length = self.util.get_value(byte, frmt) * template.value.multiplier
             self._state = self.create_state(frmtcode, template, length=length);
@@ -367,25 +366,25 @@ class StreamUnpacker():
 #                     self._scstate = ScannerState.SEGMENT_ENDED
                 else:
                     self._scstate = ScannerState.WAITING_FOR_VALUE
-            self.timeheaders[4] += time.time() - t1
+            #self.timeheaders[4] += time.time() - t1
         # next we should expect length
         elif segmenttype is SegmentType.VARIABLE_LENGTH_VALUE:
-            t1 = time.time()
+            #t1 = time.time()
             self._scstate = ScannerState.WAITING_FOR_LENGTH
             self._state = self.create_state(frmtcode, template, length=template.value.length);
-            self.timeheaders[5] += time.time() - t1
+            #self.timeheaders[5] += time.time() - t1
         # next we should expect length
         elif segmenttype is SegmentType.EXT_FORMAT:
-            t1 = time.time()
+            #t1 = time.time()
             self._scstate = ScannerState.WAITING_FOR_LENGTH
             self._state = self.create_state(frmtcode, template, length=template.value.length);
-            self.timeheaders[6] += time.time() - t1
+            #self.timeheaders[6] += time.time() - t1
         # next we should expect type       
         elif segmenttype is SegmentType.FIXED_EXT_FORMAT:
-            t1 = time.time()
+            #t1 = time.time()
             self._state = self.create_state(frmtcode, template, length=template.value.length);
             self._scstate = ScannerState.WAITING_FOR_EXT_TYPE
-            self.timeheaders[7] += time.time() - t1
+            #self.timeheaders[7] += time.time() - t1
         else:
             raise InvalidStateException(self._scstate, "header")
         
@@ -614,8 +613,8 @@ class UnpackerIterator(object):
         self._buffersize = buffersize
         self._events = []
         self._idx = 0
-        self.time = 0
-        self.ptime = 0
+        #self.time = 0
+        #self.ptime = 0
         
     
     def __iter__(self):
@@ -623,24 +622,24 @@ class UnpackerIterator(object):
 
     def __next__(self):
         if self._idx >= len(self._events):
-            t1 = time.time()
+#             #t1 = time.time()
             self._events = []
             while len(self._events) is 0:
                 self._idx = 0
                 bytes_read = self._instream.read(self._buffersize)
                 if not bytes_read:
-                    print("header: " + str(self._unpacker.timeheader) + "length: " + str(self._unpacker.timelength) + " value: " + str(self._unpacker.timevalue) + "  top: " + str(self._unpacker.timetop) + "  bottom: " + str(self._unpacker.timebottom) + "  htime: " + str(self._unpacker.htime) + "  time segend: " + str(self._unpacker.timesegend))
-                    print("headers: " + str(self._unpacker.timeheaders))
-                    print("values: " + str(self._unpacker.timevalues))
-                    print("total time: " + str(self.time))
-                    print("total p time: " + str(self.ptime))
-                    print("total time: " + str(self.time))
+#                     print("header: " + str(self._unpacker.timeheader) + "length: " + str(self._unpacker.timelength) + " value: " + str(self._unpacker.timevalue) + "  top: " + str(self._unpacker.timetop) + "  bottom: " + str(self._unpacker.timebottom) + "  htime: " + str(self._unpacker.htime) + "  time segend: " + str(self._unpacker.timesegend))
+#                     print("headers: " + str(self._unpacker.timeheaders))
+#                     print("values: " + str(self._unpacker.timevalue))
+#                     print("total time: " + str(#self.time))
+#                     print("total p time: " + str(self.ptime))
+#                     print("total time: " + str(self.time))
                     raise StopIteration()
-                t11 = time.time()
+#                 t11 = time.time()
                 self._unpacker.process(bytes_read)
                 self._events = self._unpacker.generate_events()
-                self.ptime += time.time() - t11
-            self.time += time.time() - t1
+                #self.ptime += time.time() - t11
+#             self.time += time.time() - t1
         event = self._events[self._idx]
         self._idx = self._idx + 1 
         return event

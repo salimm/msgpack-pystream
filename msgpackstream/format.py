@@ -300,7 +300,7 @@ class FormatUtil():
 #                 frmt= self._formatmap[code]
 #                 
 #         return frmt
-        (frmtcode, frmtmask, frmtidx,val) = msgpackfinder.parse_format_code(code)
+        (frmtcode, frmtmask, frmtidx,val) = msgpackfinder.parse_format_code((code))
         return  (self._formatmap[frmtcode], frmtcode, frmtmask, frmtidx,val)
         
             

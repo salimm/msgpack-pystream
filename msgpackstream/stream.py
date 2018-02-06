@@ -318,8 +318,6 @@ class StreamUnpacker():
         template = self._templatelist[frmtidx - 1]
         #self.timeheaders[1] += time.time() - t1
         
-        byte = ord(byte)
-        
         segmenttype = template.value.segmenttype        
         # single byte segment
        
@@ -443,7 +441,7 @@ class StreamUnpacker():
                    
             self.handle_segment_ended()
         else:
-            if self._state[1].value.multiplier is 2:
+            if self._stack[-1][1].value.multiplier is 2:
                 self.parentismap = 1
                 self.waitingforprop = 1
             self._scstate = ScannerState.WAITING_FOR_HEADER

@@ -79,98 +79,94 @@ const struct Format ERROR = {-1, 0 , 0};
 const struct Format find_format_inner(unsigned char code){
     unsigned char firstbits = code & 0xF0;
 
-    if (firstbits < 0x80){
+    if (code <= 0x7F){
         return POS_FIXINT;
-    }else if (code < 0xC0){        
-        if (firstbits == 0xA0){
-            return FIXSTR;
-        }else if (firstbits == 0x90){
-            return  FIXARRAY;
-        }else if (firstbits == 0x80){        
-            return  FIXMAP;
-        }
+    }else if (code <= 0x8F){
+        return  FIXMAP;
+    }else if (code <= 0x9F){
+        return  FIXARRAY;
+    }else if (code <= 0xBF){
+        return FIXSTR;
+    }else if (code >= 0xE0){
+        return NEG_FIXINT;
     }else{
+        switch(code){
+            case 0xC0:
+                return NIL;
+            case 0xC1:
+                return NEVER_USED;
+            case 0xC2:
+                return FALSE_FORMAT;
+            case 0xC3:
+                return TRUE_FORMAT;
 
-            if (firstbits >= 0xE0){
-                return NEG_FIXINT;
-            }else{
-                switch(code){
-                    case 0xC0:
-                        return NIL;
-                    case 0xC1:
-                        return NEVER_USED;
-                    case 0xC2:
-                        return FALSE_FORMAT;
-                    case 0xC3:
-                        return TRUE_FORMAT;
+            case 0xC4:
+                return BIN_8;
+            case 0xC5:
+                return BIN_16;
+            case 0xC6:
+                return BIN_32;
 
-                    case 0xC4: 
-                        return BIN_8;
-                    case 0xC5:
-                        return BIN_16;
-                    case 0xC6:
-                        return BIN_32;
+            case 0xC7:
+                return EXT_8;
+            case 0xC8:
+                return EXT_16;
+            case 0xC9:
+                return EXT_32;
 
-                    case 0xC7:
-                        return EXT_8;
-                    case 0xC8:
-                        return EXT_16;
-                    case 0xC9:
-                        return EXT_32;   
+            case 0xCA:
+                return FLOAT_32;
+            case 0xCB:
+                return FLOAT_64;
 
-                    case 0xCA:
-                        return FLOAT_32;
-                    case 0xCB:
-                        return FLOAT_64;
+            case 0xCC:
+                return UINT_8;
+            case 0xCD:
+                return UINT_16;
+            case 0xCE:
+                return UINT_32;
+            case 0xCF:
+                return UINT_64;
 
-                    case 0xCC:
-                        return UINT_8;
-                    case 0xCD:
-                        return UINT_16;   
-                    case 0xCE:
-                        return UINT_32;
-                    case 0xCF:
-                        return UINT_64;
+            case 0xD0:
+                return INT_8;
+            case 0xD1:
+                return INT_16;
+            case 0xD2:
+                return INT_32;
+            case 0xD3:
+                return INT_64;
 
-                    case 0xD0:
-                        return INT_8;
-                    case 0xD1:
-                        return INT_16;
-                    case 0xD2:
-                        return INT_32;
-                    case 0xD3:
-                        return INT_64;
+            case 0xD4:
+                return FIXEXT_1;
+            case 0xD5:
+                return FIXEXT_2;
+            case 0xD6:
+                return FIXEXT_4;
+            case 0xD7:
+                return FIXEXT_8;
+            case 0xD8:
+                return FIXEXT_16;
 
-                    case 0xD4:
-                        return FIXEXT_1;
-                    case 0xD5:
-                        return FIXEXT_2;
-                    case 0xD6:
-                        return FIXEXT_4;
-                    case 0xD7:
-                        return FIXEXT_8;
-                    case 0xD8:
-                        return FIXEXT_16;
+            case 0xD9:
+                return STR_8;
+            case 0xDA:
+                return STR_16;
+            case 0xDB:
+                return STR_32;
 
-                    case 0xD9:
-                        return STR_8;
-                    case 0xDA:
-                        return STR_16;
-                    case 0xDB:
-                        return STR_32;
+            case 0xDC:
+                return ARRAY_16;
+            case 0xDD:
+                return ARRAY_32;
 
-                    case 0xDC:
-                        return ARRAY_16;
-                    case 0xDD:
-                        return ARRAY_32;
-
-                    case 0xDE:
-                        return MAP_16;
-                    case 0xDF:
-                        return MAP_32;
-                }
-            }
+            case 0xDE:
+                return MAP_16;
+            case 0xDF:
+                return MAP_32;
         }
+    
+    }
     return ERROR;
 }
 
@@ -225,9 +221,10 @@ const PyObject * get_value(unsigned char byte, unsigned char code, unsigned char
 
 static PyObject * find_format(PyObject *self, PyObject *args){
     const char *byte;
+    const int *len;
     struct Format f  ;
     
-    if (!PyArg_ParseTuple(args, "s", &byte))
+    if (!PyArg_ParseTuple(args, "s#", &byte, &len))
         return NULL;
         
     
@@ -241,11 +238,14 @@ static PyObject * find_format(PyObject *self, PyObject *args){
 
 static PyObject * find_format_code(PyObject *self, PyObject *args){
     const char *byte;
+    const int *len;
     struct Format f;
     
     
-    if (!PyArg_ParseTuple(args, "s", &byte))
+    if (!PyArg_ParseTuple(args, "s#", &byte, &len))
         return NULL;
+    
+    
         
     
     f  = find_format_inner(byte[0]);
@@ -258,9 +258,10 @@ static PyObject * find_format_code(PyObject *self, PyObject *args){
 static PyObject * parse_format_code(PyObject *self, PyObject *args){
     const char *byte;
     struct Format f;
+    const int *len;
     const PyObject * val;
     
-    if (!PyArg_ParseTuple(args, "s", &byte))
+    if (!PyArg_ParseTuple(args, "s#", &byte, &len))
         return NULL;
     
     
@@ -304,6 +305,5 @@ main(int argc, char *argv[])
 
     /* Add a static module */
     initmsgpackfinder();
-
-
+    
 }

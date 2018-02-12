@@ -4,9 +4,7 @@ Created on Nov 13, 2017
 @author: Salim
 '''
 from enum import Enum
-from abc import ABCMeta
-import msgpackfinder
-
+from abc import ABCMeta, abstractmethod
 
 
 class Format():
@@ -221,7 +219,7 @@ class ExtType():
         
     
 class TimestampType(ExtType):
-    
+
     def __init__(self, formattype, extcode, length=None):
         
         if(formattype == FormatType.FIXEXT_4):
@@ -234,131 +232,26 @@ class TimestampType(ExtType):
         
             
         
-                    
-                    
-class FormatUtil():
-    
-    
-    def __init__(self):
-        self._typelist = list(FormatType)
-        self._templatemap = {}
-        templist = list(TemplateType)
-        for t in templist:
-            self._templatemap[t.value.formattype.value.code] = t
-        
-        self._templatelist = templist
-        self._templatelist = sorted(self._templatelist, key=lambda tmp: tmp.value.formattype.value.idx)
-        
-        self._formatmap = {}
-        templist = list(FormatType)
-        for t in templist:
-            self._formatmap[t.value.code] = t
-            
-        self._formatlist = templist        
-        self._formatlist = sorted(self._formatlist, key=lambda frmt: frmt.value.idx)
-        
-        self.emptyvals = {}
-        for t in templist:
-            self.emptyvals[t.value.code] = self._empty_value(t);
-            
-        
-    
-    
-    def match(self, val, ftype):
-        return (val & ftype.value.mask) == ftype.value.code
-    
-    
-    def get_value(self, code, ftype):
-        if(ftype is FormatType.NIL):
-            return None
-        if(ftype is FormatType.FALSE):
-            return False
-        if(ftype is FormatType.TRUE):
-            return True        
-        if(ftype is FormatType.NEG_FIXINT):
-            return self.twos_comp(code & ~ftype.value.mask, 5)
-        return code & ~ftype.value.mask
-        
-    def find(self, code):
-        
-#         firstbits = code & 0xF0
+                            
+                            
+class ParserState():
+    '''
+        Contains state of the parser. Parser state is represented by formattype to be prased, 
+        template to be parsed based on and the length needed in the parsing process.
          
-#         frmt = None
-#         if  firstbits < 0x80:
-#             frmt= FormatType.POS_FIXINT
-#         elif  code < 0xC0:
-#             if firstbits == FormatType.FIXSTR.value.code:
-#                 frmt= FormatType.FIXSTR
-#             elif firstbits == FormatType.FIXARRAY.value.code:
-#                 frmt=  FormatType.FIXARRAY
-#             elif firstbits == FormatType.FIXMAP.value.code:
-#                 frmt=  FormatType.FIXMAP
-#         else:
-#             if firstbits >= FormatType.NEG_FIXINT.value.code:
-#                 frmt= FormatType.NEG_FIXINT
-#             else:
-#                 frmt= self._formatmap[code]
-#                 
-#         return frmt
-        (frmtcode, frmtmask, frmtidx,val) = msgpackfinder.parse_format_code((code))
-        return  (self._formatmap[frmtcode], frmtcode, frmtmask, frmtidx,val)
+    '''
+    def __init__(self, formattype, template, length=None, isdone=False, extcode=None):
+        self.formattype = formattype
+        self.template = template
+        self.remaining = length 
+        self.isdone = isdone
+        self.extcode = extcode
         
-            
-    def _empty_value(self, formattype):
-        '''
-            returns default empty value 
-        :param formattype:
-        :param buff:
-        :param start:
-        :param end:
-        '''
-        if formattype.value.idx <= FormatType.BIN_32.value.idx:  # @UndefinedVariable
-            return b''
-        elif formattype.value.idx <= FormatType.FIXSTR.value.idx:  # @UndefinedVariable  
-            return ''
-        elif formattype.value.idx <= FormatType.INT_64.value.idx:  # @UndefinedVariable
-            return 0
-        elif formattype.value.idx <= FormatType.UINT_64.value.idx:  # @UndefinedVariable
-            return 0
-        elif(formattype is FormatType.FLOAT_32):
-            return float(0)
-        elif(formattype is FormatType.FLOAT_64):
-            return float(0)
-    def find2(self, code):
         
-        firstbits = code & 0xF0
-#         print(str(firstbits) + "  " + str(code))
-        if  firstbits < 0x80:
-            return FormatType.POS_FIXINT.value.code
-        elif  code < 0xC0:
-            if firstbits == FormatType.FIXSTR.value.code:
-                return FormatType.FIXSTR.value.code
-            elif firstbits == FormatType.FIXARRAY.value.code:
-                return  FormatType.FIXARRAY.value.code
-            elif firstbits == FormatType.FIXMAP.value.code:
-                return  FormatType.FIXMAP.value.code
-        else:
-            if firstbits >= FormatType.NEG_FIXINT.value.code:
-                return FormatType.NEG_FIXINT.value.code
-            else:
-                code
-        
-#         
-#         for ftype in self._typelist:
-#             if self.match(code, ftype):
-#                 return ftype
     
-    def find_template(self, frmtidx):
-        return self._templatelist[frmtidx - 1]
-    
-    def twos_comp(self, val, bits):
-        if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
-            val = val - (1 << bits)  # compute negative value
-        return val  
-            
-            
-            
-            
+    def __str__(self):
+        return "ParserState formattype: " + str(self.formattype) + ", tempalte: " + str(self.template) + ", length: " + str(self.length) + ", remaining: " + str(self.remaining) + ", isdone: " + str(self.isdone) + ", extcode: " + str(self.extcode) + "}";
 
-    
-    
+
+
+

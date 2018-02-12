@@ -3,13 +3,117 @@
 #include <string.h>
 
 
-// inline  struct Format {int idx, unsigned char code, unsigned  char mask);
 
+//******************************************************************************************************************************
+//******************************************************************************************************************************
+//*******************************************************  types and enums *****************************************************
+//******************************************************************************************************************************
+//******************************************************************************************************************************
+
+
+// struct used to contain information needed for a data segment format
 struct Format{
     int idx;
     unsigned char code;
-    unsigned char mask;    
+    unsigned char mask;
 };
+
+// enum for scanner state
+enum ScannerState{
+    IDLE = 1,  // parser just started or has processed all given data successfully (no buffer exists)
+    WAITING_FOR_HEADER = 2,  // expecting a header byte to be read next
+    WAITING_FOR_EXT_TYPE = 3,  // expecting an extension type segment
+    WAITING_FOR_LENGTH = 4,  // expecting length of the value to be read next
+    WAITING_FOR_VALUE = 5,  // expecting value to be read first
+    SEGMENT_ENDED = 6  // segment finished parsing
+};
+
+// enum for segment type. Segment type contains information regarding on how the header should be used and what should be expected to be followed by
+enum SegmentType{
+    HEADER_VALUE_PAIR = 1,  // one header and multiple bytes for value
+    HEADER_WITH_LENGTH_VALUE_PAIR = 2,  // one header, it also includes length of value paired with value which of variable length
+    VARIABLE_LENGTH_VALUE = 3,  // 1 byte for header, multiple bytes for number of items, items
+        
+    SINGLE_BYTE = 4,  // head contain value
+    
+    
+    EXT_FORMAT = 5,
+    FIXED_EXT_FORMAT = 6
+};
+
+
+// type of value. It can be raw or nested. Nested includes arrays and maps
+enum ValueType{
+    RAW = 1,
+    NESTED = 2,
+    NONE = 3
+    
+};
+
+
+
+// event type for output
+enum EventType{
+    VALUE = 1,  // value event
+    ARRAY_START = 2,  // event that indicates start of an array
+    ARRAY_END = 3,  // event that indicates end of an array
+    MAP_START = 4,  // event that indicates start of a map
+    MAP_END = 5,  // event that indicates end of a map
+    MAP_PROPERTY_NAME = 6,  // event that indicates property name
+    EXT = 7  // event that indicates ext value
+};
+
+
+// event that contains event type, format type and value
+struct Event{
+    enum EventType eventtype;
+    struct Format formattype;
+//    struct value
+};
+
+
+// Template for parsing a segment
+struct Template{
+    struct Format formattype; // format type
+    enum SegmentType segmenttype; // segment type
+    enum ValueType valuetype; // value type indicating if raw or nested
+    struct Event startevent; // event to be used at the start if nested type
+    struct Event endevent; // event to be used at the endif nested
+    int length; // length of the segment (in parts not bytes)
+    int multiplier; // multiplier. it will be 2 for maps and 1 for others
+    
+};
+
+//state of parser
+struct ParserState{
+    struct Format formattype; // format type
+    struct Template template; //template
+    int length; // remaining length. Segments to read
+    int extcode; // only used if an extension is being parsed
+};
+
+
+// parser info object that contains the complete state of the parser
+struct ParseInfo{
+//    stack
+    char * memory;
+    enum ScannerState scstate;
+    struct ParserState state;
+//    events
+    int waitingforprop;
+    int parentismap;
+};
+
+
+
+struct ExtType{
+    struct Format fortmattype;
+    int extcode;
+    
+};
+
+
+
 
 const struct Format POS_FIXINT = {36, 0x00 , 0x80};
 const struct Format NEG_FIXINT = {37, 0xE0 , 0xE0};
@@ -65,16 +169,11 @@ const struct Format MAP_32 = {23, 0xDF , 0xFF};
 const struct Format ERROR = {-1, 0 , 0};
 
 
-
-
-// inline  struct Format {int idx, unsigned char code, unsigned  char mask){
-//     struct Format frmt;
-//     frmt.idx = idx; 
-//     frmt.code = code;
-//     frmt.mask = mask;
-//     return frmt;
-// }
-
+//******************************************************************************************************************************
+//******************************************************************************************************************************
+//*******************************************************  Format Functions *****************************************************
+//******************************************************************************************************************************
+//******************************************************************************************************************************
 
 const struct Format find_format_inner(unsigned char code){
     unsigned char firstbits = code & 0xF0;
@@ -171,6 +270,31 @@ const struct Format find_format_inner(unsigned char code){
 }
 
 
+
+struct Format* create_format_lookup(){
+    struct Format* frmtlookup = malloc((0xFF+1) * sizeof *frmtlookup);;
+    
+    for(int i=0; i< 0xFF+1;i++){
+        frmtlookup[i] = find_format_inner(i);
+    }
+    
+    return frmtlookup;
+}
+
+struct Template* create_template_lookup(){
+    struct Template* tmplookup = malloc((0xFF+1) * sizeof *tmplookup);;
+    
+    for(int i=0; i< 0xFF+1;i++){
+        frmtlookup[i] = find_format_inner(i);
+    }
+    
+    return frmtlookup;
+}
+
+const struct Format lookup_format(unsigned char code, struct Format* frmtlookup){
+    return frmtlookup[code];
+}
+
 const int find_format_code_inner(unsigned char code){
     unsigned char firstbits = code & 0xF0;
     
@@ -244,10 +368,7 @@ static PyObject * find_format_code(PyObject *self, PyObject *args){
     
     if (!PyArg_ParseTuple(args, "s#", &byte, &len))
         return NULL;
-    
-    
-        
-    
+
     f  = find_format_inner(byte[0]);
     
     return Py_BuildValue("(i,i,i)",f.code, f.mask, f.idx);
@@ -294,6 +415,26 @@ initmsgpackfinder(void)
 }
 
 
+//******************************************************************************************************************************
+//******************************************************************************************************************************
+//*******************************************************  Stream Functions *****************************************************
+//******************************************************************************************************************************
+//******************************************************************************************************************************
+
+
+
+struct ParseInfo  process(const char* buff, const struct ParseInfo paserinfo){
+
+
+
+}
+
+
+
+
+
+
+
 int
 main(int argc, char *argv[])
 {
@@ -305,5 +446,10 @@ main(int argc, char *argv[])
 
     /* Add a static module */
     initmsgpackfinder();
+    
+    
+    
+    struct Format frmt = lookup_format(0xC0, create_format_lookup());
+    printf("%d",frmt.code);
     
 }

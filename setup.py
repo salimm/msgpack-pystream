@@ -7,9 +7,10 @@ from setuptools import setup, Extension
 
 
 module1 = Extension('mpstream_cunpacker',
-                    sources = ['msgpackpyc/unpackerapi.cpp',
-                               'msgpackpyc/ParserInfo.cpp',
+                    sources = [
                                'msgpackpyc/unpacker.cpp',
+                               'msgpackpyc/unpackerapi.cpp',
+                               'msgpackpyc/ParserInfo.cpp',                               
                                'msgpackpyc/Event.cpp',
                                'msgpackpyc/ExtType.cpp',
                                'msgpackpyc/HeaderUtil.cpp',

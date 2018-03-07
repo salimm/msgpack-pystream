@@ -1,7 +1,6 @@
 #ifndef EVENT_H
 #define EVENT_H
 
-#include <boost/variant.hpp>
 #include <string>
 #include "EventType.h"
 #include "Format.h"

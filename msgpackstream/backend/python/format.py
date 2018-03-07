@@ -3,7 +3,6 @@ Created on Nov 13, 2017
 
 @author: Salim
 '''
-import msgpackfinder
 from msgpackstream.defs import FormatType, TemplateType
 
 
@@ -79,13 +78,13 @@ class FormatUtil():
         return (frmt, frmt.value.code, frmt.value.mask,frmt.value.idx, self.get_value(code, frmt))
     
     
-    def find_c(self, code):
-        (frmtcode, frmtmask, frmtidx,val) = msgpackfinder.parse_format_code((code))
-        return  (self._formatmap[frmtcode], frmtcode, frmtmask, frmtidx,val)
-    
-    def find_c_fast(self, code):
-        (frmtcode, frmtmask, frmtidx,val) = msgpackfinder.parse_format_code((code))
-        return  (self._formatmap[frmtcode], frmtcode, frmtmask, frmtidx,val)
+#     def find_c(self, code):
+#         (frmtcode, frmtmask, frmtidx,val) = msgpackfinder.parse_format_code((code))
+#         return  (self._formatmap[frmtcode], frmtcode, frmtmask, frmtidx,val)
+#     
+#     def find_c_fast(self, code):
+#         (frmtcode, frmtmask, frmtidx,val) = msgpackfinder.parse_format_code((code))
+#         return  (self._formatmap[frmtcode], frmtcode, frmtmask, frmtidx,val)
         
     def find(self, code):
         

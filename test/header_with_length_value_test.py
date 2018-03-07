@@ -7,40 +7,47 @@ Created on Nov 20, 2017
 import unittest
 import msgpack
 from _io import BytesIO
-from msgpackstream.format import FormatType
-from msgpackstream.stream import  EventType, unpack
+from msgpackstream.defs import FormatType
+from msgpackstream.backend.pyc.stream import unpack as unpackc
+from msgpackstream.backend.python.stream import unpack as unpackp
+from ddt import data,ddt
+from msgpackstream.defs import EventType
 
 
-
+@ddt
 class HeaderWithLengthValueTest(unittest.TestCase):
 
-    def test_fixst_empty(self):
-        events = [e for e in unpack(self.create_instream(b'\xA0'))]
+    @data(unpackc, unpackp)
+    def test_fixst_empty(self,f):
+        events = [e for e in f(self.create_instream(b'\xA0'))]
         self.assertEqual( 1, len(events))
         self.assertEqual(FormatType.FIXSTR.value.code, events[0][1])  # @UndefinedVariable
         self.assertEqual('', events[0][2])
 
-    def test_fixstr(self):
+    @data(unpackc, unpackp)
+    def test_fixstr(self,f):
         bdata = msgpack.packb('test string')
         buff = self.create_instream(bdata)
-        events = [e for e in unpack(buff)]
+        events = [e for e in f(buff)]
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.FIXSTR.value.code, events[0][1]) # @UndefinedVariable
         self.assertEqual(EventType.VALUE, events[0][0])
         self.assertEqual('test string', events[0][2])
         
-    def test_fixarrray_empty(self):
-        events = [e for e in unpack(self.create_instream(b'\x90'))]
+    @data(unpackc, unpackp)
+    def test_fixarrray_empty(self,f):
+        events = [e for e in f(self.create_instream(b'\x90'))]
         self.assertEqual( 2, len(events))
         self.assertEqual(FormatType.FIXARRAY.value.code, events[0][1]) # @UndefinedVariable
         self.assertEqual(EventType.ARRAY_START, events[0][0])
         self.assertEqual(EventType.ARRAY_END, events[1][0])
         
-            
-    def test_fixarray(self):
+          
+    @data(unpackc, unpackp)  
+    def test_fixarray(self,f):
         bdata = msgpack.packb([1, 2, 3])
         buff = self.create_instream(bdata)
-        events = [e for e in unpack(buff)]
+        events = [e for e in f(buff)]
         self.assertEqual(5, len(events))
         self.assertEqual(FormatType.FIXARRAY.value.code, events[0][1]) # @UndefinedVariable
         self.assertEqual(FormatType.POS_FIXINT.value.code, events[1][1]) # @UndefinedVariable
@@ -61,18 +68,20 @@ class HeaderWithLengthValueTest(unittest.TestCase):
         self.assertEqual(3, events[3][2])
         self.assertEqual(None, events[4][2])
     
-    def test_fixmap_empty(self):
-        events = [e for e in unpack(self.create_instream(b'\x80'))]
+    @data(unpackc, unpackp)
+    def test_fixmap_empty(self,f):
+        events = [e for e in f(self.create_instream(b'\x80'))]
         self.assertEqual( 2, len(events))
         self.assertEqual(FormatType.FIXMAP.value.code, events[0][1]) # @UndefinedVariable
         self.assertEqual(EventType.MAP_START, events[0][0])
         self.assertEqual(EventType.MAP_END, events[1][0])
         
         
-    def test_fixmap(self):
+    @data(unpackc, unpackp)
+    def test_fixmap(self,f):
         bdata = msgpack.packb({"f1":1, "f2":2.2, "f3":'test'})
         buff = self.create_instream(bdata)
-        events = [e for e in unpack(buff)]
+        events = [e for e in f(buff)]
         self.assertEqual(8, len(events))
         self.assertEqual(FormatType.FIXMAP.value.code, events[0][1]) # @UndefinedVariable
         self.assertEqual(FormatType.FIXSTR.value.code, events[1][1]) # @UndefinedVariable

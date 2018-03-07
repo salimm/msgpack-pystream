@@ -5,6 +5,8 @@ Created on Nov 13, 2017
 '''
 from enum import Enum
 from abc import ABCMeta, abstractmethod
+import struct
+import datetime
 
 
 class Format():
@@ -210,7 +212,7 @@ class ExtType():
     
     def __eq__(self, o):
         if isinstance(o, ExtType):
-            return o.extcode == self.extcode and o.formattype is self.formattype
+            return o.extcode == self.extcode and o.formattype == self.formattype
         return False
     
     def __str__(self):
@@ -253,5 +255,80 @@ class ParserState():
         return "ParserState formattype: " + str(self.formattype) + ", tempalte: " + str(self.template) + ", length: " + str(self.length) + ", remaining: " + str(self.remaining) + ", isdone: " + str(self.isdone) + ", extcode: " + str(self.extcode) + "}";
 
 
+
+
+class   ExtTypeParser():
+    __metaclass__ = ABCMeta
+    
+        
+    @abstractmethod
+    def deserialize(self, exttype, buff, start , end):
+        '''
+            Should be implemented for every user defined extension type
+        :param data:
+        '''
+    @abstractmethod
+    def handled_extcode(self):
+        pass
+        
+        
+        
+
+class TimestampParser(ExtTypeParser):
+    
+    def __init__(self):
+        self.ustructmap = {1:'>B', 2:'>H', 4:'>L', 8:'>Q'}
+        self.structmap = {1:'>b', 2:'>h', 4:'>l', 8:'>q    '}   
+    
+    def deserialize(self, exttype, buff, start, end):
+        if exttype.formattype is FormatType.FIXEXT_4.value.code:  # @UndefinedVariable
+            return datetime.datetime.fromtimestamp(self.parse_uint(buff, start, end))
+        elif exttype.formattype is FormatType.FIXEXT_8.value.code:  # @UndefinedVariable
+            val = self.parse_uint(buff, start, end)
+            nsec = val >> 34
+            sec = val & 0x00000003ffffffffL
+            return datetime.datetime.fromtimestamp(sec + nsec / 1e9)
+        elif exttype.formattype is FormatType.EXT_8.value.code:  # @UndefinedVariable
+            nsec = self.parse_uint(buff, start, start + 4)
+            sec = self.parse_int(buff, start + 4, end)
+            return datetime.datetime.fromtimestamp(sec + nsec / 1e9)
+        else:
+            raise Exception("Unsupported FormatType " + str(exttype.formattype) + " for Timestamp (extcode = -1)!!")        
+
+    
+    def handled_extcode(self):
+        return -1
+    
+    def parse_uint(self, buff, start, end):
+        '''
+            parse an integer from the buffer given the interval of bytes
+        :param buff:
+        :param start:
+        :param end:
+        
+        '''
+        return struct.unpack_from(self.ustructmap[end - start], buff, start)[0]
+    
+    def parse_int(self, buff, start, end):
+        '''
+            parse an integer from the buffer given the interval of bytes
+        :param buff:
+        :param start:
+        :param end:
+        '''
+#         num = self.parse_uint(buff, start, end)
+#         l = (end - start)
+#         return self.twos_comp(num, l * 8)
+        return struct.unpack_from(self.structmap[end - start], buff, start)[0]
+    
+    def twos_comp(self, val, bits):
+        '''
+            two complement to get negative
+        :param val:
+        :param bits:
+        '''
+        if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
+            val = val - (1 << bits)  # compute negative value
+        return val      
 
 

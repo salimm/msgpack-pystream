@@ -4,12 +4,11 @@ Created on Nov 13, 2017
 @author: Salim
 '''
 from _pyio import __metaclass__
-from abc import ABCMeta, abstractmethod
 from msgpackstream.backend.python.format import FormatUtil 
-from msgpackstream.defs import SegmentType, FormatType, ValueType, EventType, ExtType  
+from msgpackstream.defs import SegmentType, FormatType, ValueType, EventType, ExtType  ,\
+    TimestampParser
 import struct
 from msgpackstream.errors import InvalidStateException
-import datetime
 from enum import Enum
 
 
@@ -31,82 +30,6 @@ class  ScannerState(Enum):
     
     
 
-    
-
-class   ExtTypeParser():
-    __metaclass__ = ABCMeta
-    
-        
-    @abstractmethod
-    def deserialize(self, exttype, buff, start , end):
-        '''
-            Should be implemented for every user defined extension type
-        :param data:
-        '''
-    @abstractmethod
-    def handled_extcode(self):
-        pass
-        
-        
-        
-
-class TimestampParser(ExtTypeParser):
-    
-    def __init__(self):
-        self.ustructmap = {1:'>B', 2:'>H', 4:'>L', 8:'>Q'}
-        self.structmap = {1:'>b', 2:'>h', 4:'>l', 8:'>q    '}   
-    
-    def deserialize(self, exttype, buff, start, end):
-        if exttype.formattype is FormatType.FIXEXT_4.value.code:  # @UndefinedVariable
-            return datetime.datetime.fromtimestamp(self.parse_uint(buff, start, end))
-        elif exttype.formattype is FormatType.FIXEXT_8.value.code:  # @UndefinedVariable
-            val = self.parse_uint(buff, start, end)
-            nsec = val >> 34
-            sec = val & 0x00000003ffffffffL
-            return datetime.datetime.fromtimestamp(sec + nsec / 1e9)
-        elif exttype.formattype is FormatType.EXT_8.value.code:  # @UndefinedVariable
-            nsec = self.parse_uint(buff, start, start + 4)
-            sec = self.parse_int(buff, start + 4, end)
-            return datetime.datetime.fromtimestamp(sec + nsec / 1e9)
-        else:
-            raise Exception("Unsupported FormatType " + str(exttype.formattype) + " for Timestamp (extcode = -1)!!")        
-
-    
-    def handled_extcode(self):
-        return -1
-    
-    def parse_uint(self, buff, start, end):
-        '''
-            parse an integer from the buffer given the interval of bytes
-        :param buff:
-        :param start:
-        :param end:
-        
-        '''
-        return struct.unpack_from(self.ustructmap[end - start], buff, start)[0]
-    
-    def parse_int(self, buff, start, end):
-        '''
-            parse an integer from the buffer given the interval of bytes
-        :param buff:
-        :param start:
-        :param end:
-        '''
-#         num = self.parse_uint(buff, start, end)
-#         l = (end - start)
-#         return self.twos_comp(num, l * 8)
-        return struct.unpack_from(self.structmap[end - start], buff, start)[0]
-    
-    def twos_comp(self, val, bits):
-        '''
-            two complement to get negative
-        :param val:
-        :param bits:
-        '''
-        if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
-            val = val - (1 << bits)  # compute negative value
-        return val  
-        
 
 
 class StreamUnpacker():
@@ -278,7 +201,7 @@ class StreamUnpacker():
             # self.timevalues[1] += time.time() -t1
         # next we should expect length
         elif segmenttype >= SegmentType.EXT_FORMAT:
-            # t1 = time.time()
+            # t1 = time.time() 
             value = self.parse_ext_value(self._state[0], self._state[4], buff, start, end)
             eventtype = EventType.EXT
             ftype = ExtType(self._state[0], self._state[4])
@@ -296,7 +219,7 @@ class StreamUnpacker():
         '''
         
         # t1 = time.time()
-        (frmtx, frmtcode, frmtmask, frmtidx, val) = self.util.find(byte)
+        (_, frmtcode, _, frmtidx, val) = self.util.find(byte)
         # self.timeheaders[0] += time.time() - t1
         # t1 = time.time()
         template = self._templatelist[frmtidx - 1]
@@ -628,3 +551,5 @@ class UnpackerIterator(object):
         
 
     next = __next__  # Python 2   
+
+

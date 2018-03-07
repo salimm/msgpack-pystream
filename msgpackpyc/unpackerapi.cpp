@@ -146,15 +146,15 @@ PyObject* convert_pyobject(ParserInfo &pinfo){
 }
 
 PyObject* convert_pyobject(Event &event){
-   PyObject* tp ;
-   if( event.format.which() ==0){
-   		Py_INCREF(Py_None);
-   		tp = Py_BuildValue("(i,O)", boost::get<Format>(event.format).code,Py_None);
-   }else{
-   		tp = Py_BuildValue("(i,i)",boost::get<ExtType>(event.format).formattype.code, boost::get<ExtType>(event.format).extcode);
-   }
+   // PyObject* tp ;
+   // if( event.format.which() ==0){
+   // 		Py_INCREF(Py_None);
+   // 		tp = Py_BuildValue("(i,O)", boost::get<Format>(event.format).code,Py_None);
+   // }else{
+   // 		tp = Py_BuildValue("(i,i)",boost::get<ExtType>(event.format).formattype.code, boost::get<ExtType>(event.format).extcode);
+   // }
 
-   return Py_BuildValue("(i,O,O)", event.eventtype, tp, event.value);	
+   return Py_BuildValue("(i,O,O)", event.eventtype, event.format, event.value);	
 
 }
 

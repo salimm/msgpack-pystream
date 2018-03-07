@@ -16,7 +16,7 @@ module1 = Extension('mpstream_cunpacker',
                                'msgpackpyc/ParserState.cpp',
                                ],
 #                     libraries=['libs/'],
-                    include_dirs=['libs/']
+#                     include_dirs=['libs/']
                      
                     )
 

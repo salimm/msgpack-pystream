@@ -18,16 +18,20 @@ private:   // Accessible by members of this class only
 public:    // Accessible by ALL
    // Declare prototype of member functions
    enum EventType eventtype;
-   boost::variant<Format, ExtType> format;
+   PyObject*  format;
    PyObject* value;
    // Constructor with default values
    Event(); 
 
    // Event(enum EventType eventtype, Format format, EventVal value); 
-   Event(enum EventType eventtype, boost::variant<Format, ExtType> format, PyObject* value); 
+   Event(enum EventType eventtype, struct Format format, PyObject* value); 
 
-   Event(enum EventType eventtype, boost::variant<Format, ExtType> format); 
+   Event(enum EventType eventtype, struct Format format); 
 
+   // Event(enum EventType eventtype, Format format, EventVal value); 
+   Event(enum EventType eventtype,  ExtType exttype, PyObject* value); 
+
+   Event(enum EventType eventtype,  ExtType exttype); 
 
 };
 

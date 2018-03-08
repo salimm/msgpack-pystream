@@ -1,8 +1,14 @@
-setup.py
-msgpackstream/__init__.py
-msgpackstream/errors.py
-msgpackstream/findformat.c
-msgpackstream/format.py
-msgpackstream/stream.py
-msgpackpyc/src/
-msgpackpyc/include/
+include LICENSE.txt
+include msgpackpyc/include/Event.h
+include msgpackpyc/include/EventType.h
+include msgpackpyc/include/EventVal.h
+include msgpackpyc/include/ExtType.h
+include msgpackpyc/include/Format.h
+include msgpackpyc/include/HeaderUtil.h
+include msgpackpyc/include/ParserInfo.h
+include msgpackpyc/include/ParserState.h
+include msgpackpyc/include/ScannerState.h
+include msgpackpyc/include/SegmentType.h
+include msgpackpyc/include/Template.h
+include msgpackpyc/include/unpacker.h
+include msgpackpyc/include/ValueType.h

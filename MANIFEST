@@ -5,3 +5,5 @@ msgpackstream/errors.py
 msgpackstream/findformat.c
 msgpackstream/format.py
 msgpackstream/stream.py
+msgpackpyc/src/
+msgpackpyc/include/

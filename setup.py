@@ -27,8 +27,6 @@ setup(
   name = 'msgpackstream',
   packages = ['msgpackstream','msgpackstream.backend', 'msgpackstream.backend.python','msgpackstream.backend.pyc'], # this must be the same as the name above
   version = '1.2.3',
-  include_package_data = True,
-  exclude_package_data = ['test','samples','dist','build','msgpackstream.egg-info'],
   description = 'A SAX-like MessagegPack library in python to deserialize messages from an input stream',
   author = 'Salim Malakouti',
   author_email = 'salim.malakouti@gmail.com',

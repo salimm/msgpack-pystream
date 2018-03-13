@@ -28,6 +28,28 @@ PyObject* process(PyObject *self, PyObject *args);
 
 PyObject* process(PyObject *self, PyObject *args){
 
+	// PyObject* piobj;
+	// int memsize;
+	// const char* mem;
+
+	// if (!PyArg_ParseTuple(args, "SO",  &mem, &memsize, &piobj))
+ //        return NULL;
+
+	// HeaderUtil hutil;
+
+ //    //std::cout << "ref:: " +std::to_string(piobj->ob_refcnt) +"\n";
+ //    ParserInfo pinfo = conv	ert_parser_info(piobj);
+ //    //std::cout << "ref:: " +std::to_string(piobj->ob_refcnt)+"\n";
+ //    //std::cout << "????????  1\n";
+ //    std::string memory(mem,memsize);
+ //    //std::cout << "????????  2 "+memory+" |\n";
+	// do_process(memory, pinfo);
+	// //std::cout << "ref:: " +std::to_string(piobj->ob_refcnt)+"\n";
+	// //std::cout << "????????  3\n";
+
+	// return convert_pyobject(pinfo);
+	// Py_INCREF(piobj);
+	// return piobj;
 	PyObject* piobj;
 	int memsize;
 	const char* mem;
@@ -36,16 +58,13 @@ PyObject* process(PyObject *self, PyObject *args){
         return NULL;
 
 	HeaderUtil hutil;
-
-    // std::cout << "ref:: " +std::to_string(piobj->ob_refcnt) +"\n";
+   
     ParserInfo pinfo = convert_parser_info(piobj);
-    // std::cout << "ref:: " +std::to_string(piobj->ob_refcnt)+"\n";
-    // std::cout << "????????  1\n";
+    //std::cout << "????????  1\n";
     std::string memory(mem,memsize);
-    // std::cout << "????????  2 "+memory+" |\n";
+    //std::cout << "????????  2 "+memory+" |\n";
 	do_process(memory, pinfo);
-	// std::cout << "ref:: " +std::to_string(piobj->ob_refcnt)+"\n";
-	// std::cout << "????????  3\n";
+	//std::cout << "????????  3\n";
 
 	return convert_pyobject(pinfo);
 	Py_INCREF(piobj);
@@ -56,7 +75,7 @@ PyObject* process(PyObject *self, PyObject *args){
 ParserInfo convert_parser_info( PyObject *piobj){
 	Py_INCREF(piobj);
 
-	// std::list<Event> events;
+	std::list<Event> events;
 	// PyObject* eventsobj = PyTuple_GetItem(piobj,4);
 	// for (int i =0; i< PyList_Size(eventsobj);i++){
 		// events.push_back(parse_event(PyList_GetItem(eventsobj, i)));
@@ -71,8 +90,8 @@ ParserInfo convert_parser_info( PyObject *piobj){
 		stck.push(parse_state(PyList_GetItem(stackobj, i), hutil));
 	}
 	// // Py_DECREF(stackobj);
-
-	std::string memory = std::string(PyString_AsString(PyTuple_GetItem(piobj,1)));
+	int memlen   = int(PyInt_AsLong(PyTuple_GetItem(piobj,7)));
+	std::string memory = std::string(PyString_AsString(PyTuple_GetItem(piobj,1)),memlen);
 	// // Py_DECREF(PyTuple_GetItem(piobj,1));
 	ScannerState scstate   = static_cast<ScannerState>(int(PyInt_AsLong(PyTuple_GetItem(piobj,2))));
 	// // Py_DECREF(PyTuple_GetItem(piobj,2));
@@ -97,7 +116,7 @@ ParserInfo convert_parser_info( PyObject *piobj){
 
 
 
-
+// return Py_BuildValue("(i,i,i,i,i)",state.formattype.code, state.formattype.code, state.get_length(), state.remaining, state.extcode);
 
 ParserState parse_state(PyObject* obj, HeaderUtil &hutil){
 
@@ -116,16 +135,16 @@ ParserState parse_state(PyObject* obj, HeaderUtil &hutil){
 }
 
 PyObject* convert_pyobject(ParserInfo &pinfo){
-	// std::cout << "xxxxxxxx  1\n";
+	//std::cout << "xxxxxxxx  1\n";
 	PyObject* events = PyList_New(pinfo.events.size());	
 	int idx = 0;
 	for (std::list<Event>::iterator it = pinfo.events.begin(); it != pinfo.events.end(); ++it){		
 		PyList_SET_ITEM(events, idx, convert_pyobject(*it));
 		idx++;
-		// std::cout << std::to_string(idx)+"\n";
+		//std::cout << std::to_string(idx)+"\n";
 	}
 	Py_INCREF(events);
-	// std::cout << "xxxxxxxx  2\n";
+	//std::cout << "xxxxxxxx  2\n";
 
 	PyObject* stck = PyList_New(pinfo.stck.size());		
 	idx = 0;
@@ -134,11 +153,11 @@ PyObject* convert_pyobject(ParserInfo &pinfo){
 		pinfo.stck.pop();
 		idx++;
 	}
-	// std::cout << "xxxxxxxx  3";
+	//std::cout << "xxxxxxxx  3";
 
 	PyObject* state =  convert_pyobject(pinfo.state);
 
-	// std::cout << "xxxxxxxx  4";
+	//std::cout << "xxxxxxxx  4";
 	return Py_BuildValue("(O,s#,i,O,O,i,i)", stck, pinfo.memory.c_str(), pinfo.memory.size(), pinfo.scstate, state, events, pinfo.waitingforprop, pinfo.parentismap);
 	// return Py_BuildValue("(i,i)", 1,2);
 	// return Py_BuildValue("i", 1);

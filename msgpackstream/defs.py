@@ -222,8 +222,7 @@ class ExtType():
     
 class TimestampType(ExtType):
 
-    def __init__(self, formattype, extcode, length=None):
-        
+    def __init__(self, formattype, extcode, length=None):        
         if(formattype == FormatType.FIXEXT_4):
             length = 32
         elif(formattype == FormatType.FIXEXT_8):
@@ -280,7 +279,7 @@ class TimestampParser(ExtTypeParser):
         self.ustructmap = {1:'>B', 2:'>H', 4:'>L', 8:'>Q'}
         self.structmap = {1:'>b', 2:'>h', 4:'>l', 8:'>q    '}   
     
-    def deserialize(self, exttype, buff, start, end):
+    def deserialize(self, exttype, buff, start, end):        
         if exttype.formattype is FormatType.FIXEXT_4.value.code:  # @UndefinedVariable
             return datetime.datetime.fromtimestamp(self.parse_uint(buff, start, end))
         elif exttype.formattype is FormatType.FIXEXT_8.value.code:  # @UndefinedVariable

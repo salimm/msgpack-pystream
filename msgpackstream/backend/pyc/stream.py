@@ -5,8 +5,7 @@ Created on Nov 13, 2017
 '''
 from _pyio import __metaclass__
  
-from msgpackstream.defs import SegmentType, FormatType, ValueType, EventType, ExtType  , \
-    TimestampParser, Format
+from msgpackstream.defs import EventType, ExtType  , TimestampParser    
 from msgpackstream.backend.python.format import FormatUtil
 from msgpackstream.backend.python.stream import ScannerState
 import mpstream_cunpacker 
@@ -46,6 +45,9 @@ class StreamUnpacker():
             tmpevents, self._waitingforprop, self._parentismap) = mpstream_cunpacker.process( buff, self.create_parser_info());
         self._scstate = self.scstatelist[scstateidx-1]
         
+#         print("endround --- mem len:"+str(len(self._memory)))
+#         print("endround --- stack: "+str(self._stack))
+#         print("endround --- events: "+str(self._events))
 #         self._events = tmpevents #self.transform_events(tmpevents)
         self._events = self.transform_events(tmpevents);
         
@@ -72,7 +74,7 @@ class StreamUnpacker():
             
         
     def create_parser_info(self):
-        return (self._stack, self._memory, self._scstate.value, self._state, self._events, self._waitingforprop, self._parentismap);
+        return (self._stack, self._memory, self._scstate.value, self._state, self._events, self._waitingforprop, self._parentismap, len(self._memory));
         
         
     def generate_events(self):

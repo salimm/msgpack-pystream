@@ -496,7 +496,7 @@ class StreamUnpacker():
         
 
  
-def unpack(instream, buffersize=4000, parsers=[]):
+def unpack(instream, buffersize=5000, parsers=[]):
     '''
         Creates an iterator instance for the unpacker
     :param instream:

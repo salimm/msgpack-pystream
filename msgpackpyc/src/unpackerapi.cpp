@@ -28,28 +28,7 @@ PyObject* process(PyObject *self, PyObject *args);
 
 PyObject* process(PyObject *self, PyObject *args){
 
-	// PyObject* piobj;
-	// int memsize;
-	// const char* mem;
-
-	// if (!PyArg_ParseTuple(args, "SO",  &mem, &memsize, &piobj))
- //        return NULL;
-
-	// HeaderUtil hutil;
-
- //    //std::cout << "ref:: " +std::to_string(piobj->ob_refcnt) +"\n";
- //    ParserInfo pinfo = conv	ert_parser_info(piobj);
- //    //std::cout << "ref:: " +std::to_string(piobj->ob_refcnt)+"\n";
- //    //std::cout << "????????  1\n";
- //    std::string memory(mem,memsize);
- //    //std::cout << "????????  2 "+memory+" |\n";
-	// do_process(memory, pinfo);
-	// //std::cout << "ref:: " +std::to_string(piobj->ob_refcnt)+"\n";
-	// //std::cout << "????????  3\n";
-
-	// return convert_pyobject(pinfo);
-	// Py_INCREF(piobj);
-	// return piobj;
+	
 	PyObject* piobj;
 	int memsize;
 	const char* mem;
@@ -60,11 +39,12 @@ PyObject* process(PyObject *self, PyObject *args){
 	HeaderUtil hutil;
    
     ParserInfo pinfo = convert_parser_info(piobj);
-    //std::cout << "????????  1\n";
+    //std::cout << "????????  1 "+std::to_string(pinfo.memory.size())+"\n";
     std::string memory(mem,memsize);
-    //std::cout << "????????  2 "+memory+" |\n";
+    //std::cout << "????????  2 "+memory+" |  "+std::to_string(memsize)+"\n";
 	do_process(memory, pinfo);
 	//std::cout << "????????  3\n";
+
 
 	return convert_pyobject(pinfo);
 	Py_INCREF(piobj);
@@ -86,10 +66,10 @@ ParserInfo convert_parser_info( PyObject *piobj){
 
 	std::stack<ParserState> stck;
 	PyObject* stackobj = PyTuple_GetItem(piobj,0);
-	for (int i =0; i< PyList_Size(stackobj);i++){
+	for (int i =PyList_Size(stackobj)-1; i>-1 ;i--){
 		stck.push(parse_state(PyList_GetItem(stackobj, i), hutil));
 	}
-	// // Py_DECREF(stackobj);
+	// Py_DECREF(stackobj);
 	int memlen   = int(PyInt_AsLong(PyTuple_GetItem(piobj,7)));
 	std::string memory = std::string(PyString_AsString(PyTuple_GetItem(piobj,1)),memlen);
 	// // Py_DECREF(PyTuple_GetItem(piobj,1));
@@ -129,6 +109,7 @@ ParserState parse_state(PyObject* obj, HeaderUtil &hutil){
 	int extcode = int(PyInt_AsLong(PyTuple_GetItem(obj,4)));
 	struct Format frmt = hutil.find_format(code);
 	struct Template tmpl = hutil.find_template(code);
+	//std::cout << "parsing {state remaining: "+std::to_string(remaining) +" length:"+std::to_string(length)+"\n";
 	return ParserState(frmt, tmpl, length, remaining, extcode);
 
 	
@@ -141,7 +122,7 @@ PyObject* convert_pyobject(ParserInfo &pinfo){
 	for (std::list<Event>::iterator it = pinfo.events.begin(); it != pinfo.events.end(); ++it){		
 		PyList_SET_ITEM(events, idx, convert_pyobject(*it));
 		idx++;
-		//std::cout << std::to_string(idx)+"\n";
+		// //std::cout << std::to_string(idx)+"\n";
 	}
 	Py_INCREF(events);
 	//std::cout << "xxxxxxxx  2\n";
@@ -149,15 +130,16 @@ PyObject* convert_pyobject(ParserInfo &pinfo){
 	PyObject* stck = PyList_New(pinfo.stck.size());		
 	idx = 0;
 	while(pinfo.stck.size()!=0){
+		//std::cout << "converting {state remaining: "+std::to_string(pinfo.stck.top().remaining) +" length:"+std::to_string(pinfo.stck.top().get_length())+"\n";
 		PyList_SET_ITEM(stck, idx, convert_pyobject(pinfo.stck.top()));
 		pinfo.stck.pop();
 		idx++;
 	}
-	//std::cout << "xxxxxxxx  3";
+	//std::cout << "xxxxxxxx  3\n";
 
 	PyObject* state =  convert_pyobject(pinfo.state);
 
-	//std::cout << "xxxxxxxx  4";
+	//std::cout << "xxxxxxxx  4  "+std::to_string(pinfo.memory.size())+"\n";
 	return Py_BuildValue("(O,s#,i,O,O,i,i)", stck, pinfo.memory.c_str(), pinfo.memory.size(), pinfo.scstate, state, events, pinfo.waitingforprop, pinfo.parentismap);
 	// return Py_BuildValue("(i,i)", 1,2);
 	// return Py_BuildValue("i", 1);

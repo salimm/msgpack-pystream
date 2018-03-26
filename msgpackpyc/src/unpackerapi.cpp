@@ -35,21 +35,20 @@ PyObject* process(PyObject *self, PyObject *args){
 
 	if (!PyArg_ParseTuple(args, "s#O",  &mem, &memsize, &piobj))
         return NULL;
+    // Py_INCREF(piobj);
 
-	HeaderUtil hutil;
+	// HeaderUtil hutil;
    
     ParserInfo pinfo = convert_parser_info(piobj);
-    //std::cout << "????????  1 "+std::to_string(pinfo.memory.size())+"\n";
+    // std::cout << "????????  1 "+std::to_string(pinfo.memory.size())+"\n";
     std::string memory(mem,memsize);
-    //std::cout << "????????  2 "+memory+" |  "+std::to_string(memsize)+"\n";
+    // std::cout << "????????  2 "+memory+" |  "+std::to_string(memsize)+"\n";
 	do_process(memory, pinfo);
-	//std::cout << "????????  3\n";
+	// std::cout << "???????	?  3\n";
 
+	// return piobj;
 
-	return convert_pyobject(pinfo);
-	Py_INCREF(piobj);
-	return piobj;
-	
+	return convert_pyobject(pinfo);		
 }
 
 ParserInfo convert_parser_info( PyObject *piobj){
@@ -66,6 +65,7 @@ ParserInfo convert_parser_info( PyObject *piobj){
 
 	std::stack<ParserState> stck;
 	PyObject* stackobj = PyTuple_GetItem(piobj,0);
+
 	for (int i =PyList_Size(stackobj)-1; i>-1 ;i--){
 		stck.push(parse_state(PyList_GetItem(stackobj, i), hutil));
 	}
@@ -90,6 +90,7 @@ ParserInfo convert_parser_info( PyObject *piobj){
 	Py_DECREF(piobj);
 
 	return pinfo;
+
 	
 
 }
@@ -99,6 +100,7 @@ ParserInfo convert_parser_info( PyObject *piobj){
 // return Py_BuildValue("(i,i,i,i,i)",state.formattype.code, state.formattype.code, state.get_length(), state.remaining, state.extcode);
 
 ParserState parse_state(PyObject* obj, HeaderUtil &hutil){
+	Py_INCREF(obj);
 
 	if(obj == Py_None){
 		return ParserState();
@@ -109,7 +111,9 @@ ParserState parse_state(PyObject* obj, HeaderUtil &hutil){
 	int extcode = int(PyInt_AsLong(PyTuple_GetItem(obj,4)));
 	struct Format frmt = hutil.find_format(code);
 	struct Template tmpl = hutil.find_template(code);
-	//std::cout << "parsing {state remaining: "+std::to_string(remaining) +" length:"+std::to_string(length)+"\n";
+	
+	Py_DECREF(obj);
+
 	return ParserState(frmt, tmpl, length, remaining, extcode);
 
 	
@@ -124,7 +128,7 @@ PyObject* convert_pyobject(ParserInfo &pinfo){
 		idx++;
 		// //std::cout << std::to_string(idx)+"\n";
 	}
-	Py_INCREF(events);
+	// Py_INCREF(events);
 	//std::cout << "xxxxxxxx  2\n";
 
 	PyObject* stck = PyList_New(pinfo.stck.size());		
@@ -140,7 +144,12 @@ PyObject* convert_pyobject(ParserInfo &pinfo){
 	PyObject* state =  convert_pyobject(pinfo.state);
 
 	//std::cout << "xxxxxxxx  4  "+std::to_string(pinfo.memory.size())+"\n";
-	return Py_BuildValue("(O,s#,i,O,O,i,i)", stck, pinfo.memory.c_str(), pinfo.memory.size(), pinfo.scstate, state, events, pinfo.waitingforprop, pinfo.parentismap);
+	PyObject* out = Py_BuildValue("(O,s#,i,O,O,i,i)", stck, pinfo.memory.c_str(), pinfo.memory.size(), pinfo.scstate, state, events, pinfo.waitingforprop, pinfo.parentismap);
+	Py_DECREF(stck);
+	Py_DECREF(state);
+	Py_DECREF(events);	
+
+	return out;
 	// return Py_BuildValue("(i,i)", 1,2);
 	// return Py_BuildValue("i", 1);
 
@@ -155,7 +164,8 @@ PyObject* convert_pyobject(Event &event){
    // 		tp = Py_BuildValue("(i,i)",boost::get<ExtType>(event.format).formattype.code, boost::get<ExtType>(event.format).extcode);
    // }
 
-   return Py_BuildValue("(i,O,O)", event.eventtype, event.format, event.value);	
+   PyObject* res=Py_BuildValue("(i,O,O)", event.eventtype, event.format, event.value);	
+   return res;
 
 }
 

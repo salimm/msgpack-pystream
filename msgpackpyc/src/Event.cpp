@@ -1,5 +1,5 @@
 #include "Event.h"
-
+#include <iostream>
 
 PyObject* convert(struct Format frmt){
 	Py_INCREF(Py_None);
@@ -48,3 +48,11 @@ Event::Event(enum EventType eventtype, ExtType exttype ){
  	PyObject* val =  Py_None;
  	this->value = val;
  }
+
+
+
+Event::~Event(){
+	// Py_DECREF(this->value);
+	// Py_DECREF(this->format);
+	// std::cout << "working!!";
+}

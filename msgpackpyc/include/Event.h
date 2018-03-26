@@ -32,6 +32,8 @@ public:    // Accessible by ALL
 
    Event(enum EventType eventtype,  ExtType exttype); 
 
+   ~Event(); 
+
 };
 
 

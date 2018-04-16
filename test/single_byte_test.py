@@ -33,6 +33,7 @@ class TestSingleByteTypes(unittest.TestCase):
         bdata = msgpack.packb(1)
         buff = self.create_instream(bdata)
         events = [e for e in f(buff)]
+        print(events)
         self.assertEqual(1, len(events))
         self.assertEqual(FormatType.POS_FIXINT.value.code, events[0][1])  # @UndefinedVariable
         self.assertEqual(EventType.VALUE, events[0][0])

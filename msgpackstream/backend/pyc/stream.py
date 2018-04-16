@@ -31,7 +31,7 @@ class StreamUnpacker():
         self.register(TimestampParser())
         self._waitingforprop = 0
         self._parentismap = 0
-        self.eventlist = [EventType.VALUE, EventType.ARRAY_START, EventType.ARRAY_END, EventType.MAP_START, EventType.MAP_END, EventType.MAP_PROPERTY_NAME, EventType.EXT]
+#         self.eventlist = [EventType.VALUE, EventType.ARRAY_START, EventType.ARRAY_END, EventType.MAP_START, EventType.MAP_END, EventType.MAP_PROPERTY_NAME, EventType.EXT]
         self.scstatelist = [ScannerState.IDLE, ScannerState.WAITING_FOR_HEADER, ScannerState.WAITING_FOR_EXT_TYPE, ScannerState.WAITING_FOR_LENGTH, ScannerState.WAITING_FOR_VALUE, ScannerState.SEGMENT_ENDED]
         
     
@@ -54,25 +54,25 @@ class StreamUnpacker():
         
         
         
-    def transform_events(self, tmpevents):
-        out = []        
-        for x in range(0, len(tmpevents)):
-            ev = tmpevents[x]
-            o = None            
-            if ev[1][1] is None:
-                o = (self.eventlist[ev[0]-1], ev[1][0], ev[2])
-            else:
-                exttype = ExtType(ev[1][0],ev[1][1])
-                val= ev[2]
-                parser = self._deserializers.get(exttype.extcode, None)
-                if parser:
-                    val =  parser.deserialize(exttype, val, 0   , len(val))
-                o = (self.eventlist[ev[0]-1],exttype , val)
+#     def transform_events(self, tmpevents):
+#         out = []        
+#         for x in range(0, len(tmpevents)):
+#             ev = tmpevents[x]
+#             o = None            
+#             if ev[1][1] is None:
+#                 o = (self.eventlist[ev[0]-1], ev[1][0], ev[2])
+#             else:
+#                 exttype = ExtType(ev[1][0],ev[1][1])
+#                 val= ev[2]
+#                 parser = self._deserializers.get(exttype.extcode, None)
+#                 if parser:
+#                     val =  parser.deserialize(exttype, val, 0   , len(val))
+#                 o = (self.eventlist[ev[0]-1],exttype , val)
+# #              
+#             out.append(o)
+#               
+#         return out
 #              
-            out.append(o)
-             
-        return out
-            
         
     def create_parser_info(self):
         return (self._stack, self._memory, self._scstate.value, self._state, self._events, self._waitingforprop, self._parentismap, len(self._memory));

@@ -673,11 +673,12 @@ PyObject* create_event(enum EventType eventtype, struct Format format , PyObject
 	PyObject* event = PyTuple_New(3);
 
 	PyObject* eventype_py = PyInt_FromLong(eventtype);
-	PyTuple_SET_ITEM(event,0,PyObject_CallFunctionObjArgs(EVENT_TYPE,eventype_py, NULL));
+	PyTuple_SET_ITEM(event,0,eventype_py);
+	// PyTuple_SET_ITEM(event,0,PyObject_CallFunctionObjArgs(EVENT_TYPE,eventype_py, NULL));
 	PyTuple_SET_ITEM(event,1,convert_type(format));
  	PyTuple_SET_ITEM(event,2,value);
  	
-	Py_DECREF(eventype_py);
+	// Py_DECREF(eventype_py);
  	return event;
  }
 
@@ -687,13 +688,14 @@ PyObject* create_event(enum EventType eventtype, struct Format format, PyObject*
 	PyObject* event = PyTuple_New(3);
  	
  	PyObject* eventype_py = PyInt_FromLong(eventtype);
-	PyTuple_SET_ITEM(event,0,PyObject_CallFunctionObjArgs(EVENT_TYPE,eventype_py, NULL));
+ 	PyTuple_SET_ITEM(event,0,eventype_py);
+	// PyTuple_SET_ITEM(event,0,PyObject_CallFunctionObjArgs(EVENT_TYPE,eventype_py, NULL));
  	PyTuple_SET_ITEM(event,1,convert_type(format));
  	
  	Py_INCREF(Py_None);
  	PyTuple_SET_ITEM(event,2,Py_None);
 
- 	Py_DECREF(eventype_py);
+ 	// Py_DECREF(eventype_py);
 
  	return event;
  }
@@ -701,12 +703,13 @@ PyObject* create_event(enum EventType eventtype, struct Format format, PyObject*
  PyObject* create_event_ext(enum EventType eventtype, ExtType exttype , PyObject* value, PyObject* deserializers, PyObject* EXT_TYPE, PyObject* EVENT_TYPE){
  	PyObject* event = PyTuple_New(3); 	
 	PyObject* eventype_py = PyInt_FromLong(eventtype);
-	PyTuple_SET_ITEM(event,0,PyObject_CallFunctionObjArgs(EVENT_TYPE,eventype_py, NULL));
+	PyTuple_SET_ITEM(event,0,eventype_py);
+	// PyTuple_SET_ITEM(event,0,PyObject_CallFunctionObjArgs(EVENT_TYPE,eventype_py, NULL));
 	PyObject* exttype_py = convert_type(exttype, EXT_TYPE);
  	PyTuple_SET_ITEM(event,1,exttype_py);
  	PyTuple_SET_ITEM(event,2,deserialize(deserializers, exttype_py, exttype.extcode, value, 0, PyString_Size(value)));
 
- 	Py_DECREF(eventype_py);
+ 	// Py_DECREF(eventype_py);
  	return event;
  } 
 
@@ -715,12 +718,12 @@ PyObject* create_event(enum EventType eventtype, struct Format format, PyObject*
 PyObject* create_event_ext(enum EventType eventtype, ExtType exttype, PyObject* deserializers, PyObject* EXT_TYPE, PyObject* EVENT_TYPE){
 	PyObject* event = PyTuple_New(3);
  	PyObject* eventype_py = PyInt_FromLong(eventtype);
-	PyTuple_SET_ITEM(event,0,PyObject_CallFunctionObjArgs(EVENT_TYPE,eventype_py, NULL));
+	// PyTuple_SET_ITEM(event,0,PyObject_CallFunctionObjArgs(EVENT_TYPE,eventype_py, NULL));
  	PyTuple_SET_ITEM(event,1,convert_type(exttype, EXT_TYPE));
  	Py_INCREF(Py_None);
  	PyTuple_SET_ITEM(event,2,Py_None);
 
- 	Py_DECREF(eventype_py);
+ 	// Py_DECREF(eventype_py);
 
  	return event;
  

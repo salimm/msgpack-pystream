@@ -10,5 +10,5 @@
 
 
 
-void do_process(std::string buff, ParserInfo &context);
+void do_process(std::string buff, ParserInfo &context, PyObject* deserializers);
 	

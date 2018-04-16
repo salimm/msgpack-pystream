@@ -8,7 +8,7 @@ from _pyio import __metaclass__
 from msgpackstream.defs import EventType, ExtType  , TimestampParser    
 from msgpackstream.backend.python.format import FormatUtil
 from msgpackstream.backend.python.stream import ScannerState
-import mpstream_cunpacker 
+from mpstream_cunpacker import process , create_eventstream
 
 
 
@@ -42,14 +42,15 @@ class StreamUnpacker():
         :param buff:
         '''
         (self._stack, self._memory, scstateidx, self._state, 
-            tmpevents, self._waitingforprop, self._parentismap) = mpstream_cunpacker.process( buff, self.create_parser_info());
+            tmpevents, self._waitingforprop, self._parentismap) = process( buff, self.create_parser_info(), self._deserializers);
         self._scstate = self.scstatelist[scstateidx-1]
         
 #         print("endround --- mem len:"+str(len(self._memory)))
 #         print("endround --- stack: "+str(self._stack))
 #         print("endround --- events: "+str(self._events))
 #         self._events = tmpevents #self.transform_events(tmpevents)
-        self._events = self.transform_events(tmpevents);
+        self._events = tmpevents
+#         self._events = self.transform_events(tmpevents);
         
         
         
@@ -94,42 +95,49 @@ class StreamUnpacker():
         
         
     
-    
-    
-class UnpackerIterator(object):
-    
-    def __init__(self, instream, buffersize=5000, parsers=[]):
-        self._instream = instream
-        self._unpacker = StreamUnpacker()
-        for parser in parsers:
-            self._unpacker.register(parser)
-        self._buffersize = buffersize
-        self._events = []
-        self._idx = 0
+def UnpackerIterator(instream, buffersize=5000, parsers=[]):
+    deserializers = {};
+    for parser in parsers:
+        deserializers[parser.handled_extcode()] = parser
+    tsparser = TimestampParser()
+    deserializers[tsparser.handled_extcode()] = tsparser;    
+    return  create_eventstream(instream, buffersize, deserializers)
         
     
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self._idx >= len(self._events):
-            self._events = []
-            while len(self._events) is 0:
-                self._idx = 0
-                bytes_read = self._instream.read(self._buffersize)
-                if not bytes_read:
-                    raise StopIteration()
-                self._unpacker.process(bytes_read)
-                self._events = self._unpacker.generate_events()
-        event = self._events[self._idx]
-        self._idx = self._idx + 1 
-        return event
-        
-        
-
-    next = __next__  # Python 2   
-    
-    
+# class UnpackerIterator(object):
+#     
+#     def __init__(self, instream, buffersize=5000, parsers=[]):
+#         self._instream = instream
+#         self._unpacker = StreamUnpacker()
+#         for parser in parsers:
+#             self._unpacker.register(parser)
+#         self._buffersize = buffersize
+#         self._events = []
+#         self._idx = 0
+#         
+#     
+#     def __iter__(self):
+#         return self
+# 
+#     def __next__(self):
+#         if self._idx >= len(self._events):
+#             self._events = []
+#             while len(self._events) is 0:
+#                 self._idx = 0
+#                 bytes_read = self._instream.read(self._buffersize)
+#                 if not bytes_read:
+#                     raise StopIteration()
+#                 self._unpacker.process(bytes_read)
+#                 self._events = self._unpacker.generate_events()
+#         event = self._events[self._idx]
+#         self._idx = self._idx + 1
+#         return event
+#         
+#         
+# 
+#     next = __next__  # Python 2   
+#     
+#     
     
 
 def unpack(instream, buffersize=5000, parsers=[]):

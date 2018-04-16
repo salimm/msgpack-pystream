@@ -37,7 +37,7 @@ class TestSingleByteTypes(unittest.TestCase):
         self.assertEqual(FormatType.POS_FIXINT.value.code, events[0][1])  # @UndefinedVariable
         self.assertEqual(EventType.VALUE, events[0][0])
         self.assertEqual(1, events[0][2])
-        
+         
         # checking max 
         bdata = msgpack.packb(127)
         buff = self.create_instream(bdata)
@@ -46,8 +46,8 @@ class TestSingleByteTypes(unittest.TestCase):
         self.assertEqual(FormatType.POS_FIXINT.value.code, events[0][1])  # @UndefinedVariable
         self.assertEqual(EventType.VALUE, events[0][0])
         self.assertEqual(127, events[0][2])
-
-
+ 
+ 
     @data(unpackc, unpackp)
     def test_boolean(self, f):
         # checking min
@@ -58,7 +58,7 @@ class TestSingleByteTypes(unittest.TestCase):
         self.assertEqual(FormatType.FALSE.value.code, events[0][1])  # @UndefinedVariable
         self.assertEqual(EventType.VALUE, events[0][0])
         self.assertEqual(False, events[0][2])
-        
+         
         # checking max 
         bdata = msgpack.packb(True)
         buff = self.create_instream(bdata)
@@ -67,7 +67,7 @@ class TestSingleByteTypes(unittest.TestCase):
         self.assertEqual(FormatType.TRUE.value.code, events[0][1])  # @UndefinedVariable
         self.assertEqual(EventType.VALUE, events[0][0])
         self.assertEqual(True, events[0][2])
-        
+         
     @data(unpackc, unpackp)
     def test_negfixint(self,f):
         # checking min
@@ -78,7 +78,7 @@ class TestSingleByteTypes(unittest.TestCase):
         self.assertEqual(FormatType.NEG_FIXINT.value.code, events[0][1])  # @UndefinedVariable
         self.assertEqual(EventType.VALUE, events[0][0])
         self.assertEqual(-1, events[0][2])
-        
+         
         # checking max 
         bdata = msgpack.packb(-15)
         buff = self.create_instream(bdata)

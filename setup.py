@@ -3,7 +3,7 @@
 # import sys
 # from glob import glob
 # from distutils.command.sdist import sdist
-from setuptools import setup, Extension, find_packages
+from setuptools import setup, Extension
 
 
 module1 = Extension('mpstream_cunpacker',

@@ -1,15 +1,12 @@
 #include "ParserInfo.h"
 
-
 ParserInfo::ParserInfo(){
-    this->memory = "";
+    this->memory = std::string("",0);
     this->scstate = SC_IDLE;
-    ParserState state;
-    this->state = state;
+    this->state = ParserState();
     this->waitingforprop = 0;
-    this->parentismap = 0;
-    // std::list<Event> events;
-    // this->events = events;
+    this->parentismap = 0;    
+    this->events = PyList_New(0);
 }
 
 ParserInfo::ParserInfo(const std::string &memory, enum ScannerState scstate, ParserState state, int waitingforprop, int parentismap){
@@ -18,6 +15,7 @@ ParserInfo::ParserInfo(const std::string &memory, enum ScannerState scstate, Par
     this->state = state;
     this->waitingforprop = waitingforprop;
     this->parentismap = parentismap;
+    this->events = PyList_New(0);
     
 }
 
@@ -28,18 +26,25 @@ ParserInfo::ParserInfo(const std::string &memory, enum ScannerState scstate, Par
     this->waitingforprop = waitingforprop;
     this->parentismap = parentismap;
     this->stck = stck;
+    this->events = PyList_New(0);
 }
 
-ParserInfo::ParserInfo(const std::string &memory, enum ScannerState scstate, ParserState state, std::list<Event> &events , int waitingforprop, int parentismap){
-    this->memory = memory;
-    this->scstate = scstate;
-    this->state = state;
-    this->waitingforprop = waitingforprop;
-    this->parentismap = parentismap;
-    this->events = events;
+// ParserInfo::ParserInfo(const std::string &memory, enum ScannerState scstate, ParserState state, std::list<Event> &events , int waitingforprop, int parentismap){
+//     this->memory = memory;
+//     this->scstate = scstate;
+//     this->state = state;
+//     this->waitingforprop = waitingforprop;
+//     this->parentismap = parentismap;
+//     this->events = events;
 
+// }
+
+
+
+
+ParserInfo::~ParserInfo(){
+    // std::cout << "?????";
+    // PyObject* x = this->events;    
+    // this->events = NULL;
+    // Py_XDECREF(x);
 }
-
-
-
-

@@ -122,7 +122,8 @@ class EventType(Enum):
     MAP_END = 5  # event that indicates end of a map
     MAP_PROPERTY_NAME = 6  # event that indicates property name
     EXT = 7  # event that indicates ext value
-              
+           
+           
     
 class TemplateType(Enum):
     '''
@@ -188,7 +189,6 @@ class ExtType():
     '''
     Class for Extention Type including format type, template and length in the header
     '''
-    __classmeta__ = ABCMeta
     
     def __init__(self, formattype, extcode):
         self._formattype = formattype

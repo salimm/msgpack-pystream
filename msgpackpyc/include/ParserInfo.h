@@ -5,9 +5,10 @@
 #include <string>
 #include <stack>
 #include <list>
-#include "Event.h"
+// #include "Event.h"
 #include "ParserState.h"
 #include "ScannerState.h"
+#include <Python.h>
 
  
 
@@ -21,7 +22,7 @@ public:    // Accessible by ALL
 	std::string memory;
 	enum ScannerState scstate;
 	ParserState state;
-	std::list<Event> events;
+	PyObject* events;
 	int waitingforprop;
 	int parentismap;
 
@@ -33,7 +34,8 @@ public:    // Accessible by ALL
 
    ParserInfo(const std::string &memory, enum ScannerState scstate, ParserState state,std::stack<ParserState> &stck , int waitingforprop, int parentismap); 
 
-   ParserInfo(const std::string &memory, enum ScannerState scstate, ParserState state,std::list<Event> &events , int waitingforprop, int parentismap); 
+   // ParserInfo(const std::string &memory, enum ScannerState scstate, ParserState state,std::list<Event> &events , int waitingforprop, int parentismap); 
+   ~ParserInfo();
 };
 
 

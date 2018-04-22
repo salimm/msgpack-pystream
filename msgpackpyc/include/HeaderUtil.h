@@ -8,7 +8,7 @@
  
 
 
- // Circle class declaration
+// Circle class declaration
 class HeaderUtil {
 private:   // Accessible by members of this class only
 
@@ -52,8 +52,6 @@ public:    // Accessible by ALL
    int  get_int_value(unsigned char byte, const struct Format &frmt);
 
 	PyObject*  empty_value(const struct Format &frmt );
-
-
    
 };
 

@@ -5,7 +5,6 @@
 #include <string>
 #include <stack>
 #include <list>
-// #include "Event.h"
 #include "ParserState.h"
 #include "ScannerState.h"
 #include <Python.h>

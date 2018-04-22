@@ -10,17 +10,15 @@
 
 
 struct Template{
-    // Declare prototype of member functions
-   struct Format formattype; // format type
-   enum SegmentType segmenttype; // segment type
-   enum ValueType valuetype; // value type indicating if VALUE_RAW or VALUE_NESTED
-   enum EventType startevent; // event to be used at the start if VALUE_NESTED type
-   enum EventType endevent; // event to be used at the endif VALUE_NESTED
-   int length; // length of the segment (in parts not bytes)
-   int multiplier; // multiplier. it will be 2 for maps and 1 for others
+   // Declare prototype of member functions
+   struct Format formattype;            // format type
+   enum SegmentType segmenttype;        // segment type
+   enum ValueType valuetype;            // value type indicating if VALUE_RAW or VALUE_NESTED
+   enum EventType startevent;           // event to be used at the start if VALUE_NESTED type
+   enum EventType endevent;             // event to be used at the endif VALUE_NESTED
+   int length;                          // length of the segment (in parts not bytes)
+   int multiplier;                      // multiplier. it will be 2 for maps and 1 for others
 };;
-
-
 
 
 

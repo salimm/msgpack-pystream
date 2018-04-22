@@ -10,7 +10,7 @@
  
 
 
- // Circle class declaration
+// Circle class declaration
 class Event {
 private:   // Accessible by members of this class only
    

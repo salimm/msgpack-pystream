@@ -29,22 +29,6 @@ ParserInfo::ParserInfo(const std::string &memory, enum ScannerState scstate, Par
     this->events = PyList_New(0);
 }
 
-// ParserInfo::ParserInfo(const std::string &memory, enum ScannerState scstate, ParserState state, std::list<Event> &events , int waitingforprop, int parentismap){
-//     this->memory = memory;
-//     this->scstate = scstate;
-//     this->state = state;
-//     this->waitingforprop = waitingforprop;
-//     this->parentismap = parentismap;
-//     this->events = events;
-
-// }
-
-
-
 
 ParserInfo::~ParserInfo(){
-    // std::cout << "?????";
-    // PyObject* x = this->events;    
-    // this->events = NULL;
-    // Py_XDECREF(x);
 }

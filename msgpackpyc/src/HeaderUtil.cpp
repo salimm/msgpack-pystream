@@ -1,20 +1,14 @@
-#include <iostream>
 #include "HeaderUtil.h"
-#include <iostream>
 
 
 HeaderUtil::HeaderUtil(){
-	// this->frmtlookup = this->create_format_lookup();
     this->create_format_lookup();
-	// this->templatelookup = this->create_template_lookup();
     this->create_template_lookup();
-
     this->create_fval_lookup();
 }
 
 
-
-   // find the format for code
+// find the format for code
 Format& HeaderUtil::find_format(unsigned char code){
 	return this->frmtlookup.at(int(code));
 }
@@ -32,41 +26,27 @@ Template& HeaderUtil::find_template(unsigned char code){
 
 // creates lookup table  for format
 void HeaderUtil::create_format_lookup(){
-	 
-    
     for(int i=0; i< 0xFF+1;i++){
         this->frmtlookup.push_back(this->decode_format_code(i));
     }
-
 }
 
 // creates lookup table for template
 void HeaderUtil::create_template_lookup(){
-    
     for(int i=-2; i< 38;i++){        
         this->templatelookup.push_back(this->decode_template_idx(i));
     }
-    
 }
 	
 
 const int twos_comp(int val, int bits){
-    // std::cout << val;
-    // std::cout << bits;
-    // if ((val & (1<<(bits-1))) !=0){
-        return val - (1<<bits);
-    // }
-    // return val;
+    return val - (1<<bits);
 }
 
 
 // extracts value from header byte 
 PyObject*  HeaderUtil::get_value(unsigned char header, const struct Format &frmt){
-	// std::cout <<"*** hu *** 1\n";
-	// std::cout << std::to_string(frmt.idx) +"\n";
-	// std::cout << std::to_string(frmt.codexc);
-	// std::cout <<"*** hu *** 1.5\n";
-	 if (frmt.code == NIL.code){
+	if (frmt.code == NIL.code){
         Py_INCREF(Py_None);
         return Py_None;
     	
@@ -80,14 +60,10 @@ PyObject*  HeaderUtil::get_value(unsigned char header, const struct Format &frmt
         return Py_BuildValue("i", twos_comp(header & ~frmt.mask,5));        
     }
     else{
-    	// std::cout <<"*** hu *** 2\n";
     	int val = int(header & ~frmt.mask);
     	return Py_BuildValue("i", val);
     }
-    // return this->fval_lookup[frmt.idx](header,frmt);
-    // std::cout <<"*** hu *** 4\n";
 }
-
 	
 
 
@@ -165,7 +141,6 @@ int  HeaderUtil::get_int_value(unsigned char byte,const struct  Format &frmt){
 	}
 		
 }
-
 
 
 Format HeaderUtil::decode_format_code(unsigned char code){
@@ -259,7 +234,6 @@ Format HeaderUtil::decode_format_code(unsigned char code){
     }
     return ERROR;
 }
-
 
 
 

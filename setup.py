@@ -1,8 +1,3 @@
-# import io
-# import os
-# import sys
-# from glob import glob
-# from distutils.command.sdist import sdist
 from setuptools import setup, Extension
 
 
@@ -16,18 +11,15 @@ module1 = Extension('mpstream_cunpacker',
                                'msgpackpyc/src/HeaderUtil.cpp',
                                'msgpackpyc/src/ParserState.cpp',
                                ],
-#                     libraries=['libs/'],
                     include_dirs=['msgpackpyc/include/'],
                     language = "c++"
                      
                     )
 
-
-
 setup(
   name = 'msgpackstream',
   packages = ['msgpackstream','msgpackstream.backend', 'msgpackstream.backend.python','msgpackstream.backend.pyc'], # this must be the same as the name above
-  version = '1.2.7',
+  version = '2.0.0',
   description = 'A SAX-like MessagegPack library in python to deserialize messages from an input stream',
   author = 'Salim Malakouti',
   author_email = 'salim.malakouti@gmail.com',

@@ -12,7 +12,6 @@ struct Format{
 //------------------ List of Format type ---------------------
 //--------------------------------------------------------
 
-
 const struct Format POS_FIXINT = {36, 0x00 , 0x80};
 const struct Format NEG_FIXINT = {37, 0xE0 , 0xE0};
 

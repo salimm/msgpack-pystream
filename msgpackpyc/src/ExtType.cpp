@@ -1,7 +1,4 @@
-
 #include "ExtType.h"
- 
-
 
  
 ExtType::ExtType(){

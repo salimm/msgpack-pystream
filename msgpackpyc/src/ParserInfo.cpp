@@ -1,7 +1,8 @@
 #include "ParserInfo.h"
 
 ParserInfo::ParserInfo(){
-    this->memory = std::string("",0);
+    std::string empty("");
+    this->memory = empty;
     this->scstate = SC_IDLE;
     this->state = ParserState();
     this->waitingforprop = 0;

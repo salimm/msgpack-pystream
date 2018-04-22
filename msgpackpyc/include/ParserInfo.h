@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <string>
+#include <iostream>
 #include <stack>
 #include <list>
 #include "ParserState.h"

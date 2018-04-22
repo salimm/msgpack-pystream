@@ -7,8 +7,6 @@ from msgpackstream.defs import FormatType, TemplateType
 
 
 
-
-                    
                     
 class FormatUtil():
     
@@ -78,14 +76,6 @@ class FormatUtil():
         return (frmt, frmt.value.code, frmt.value.mask,frmt.value.idx, self.get_value(code, frmt))
     
     
-#     def find_c(self, code):
-#         (frmtcode, frmtmask, frmtidx,val) = msgpackfinder.parse_format_code((code))
-#         return  (self._formatmap[frmtcode], frmtcode, frmtmask, frmtidx,val)
-#     
-#     def find_c_fast(self, code):
-#         (frmtcode, frmtmask, frmtidx,val) = msgpackfinder.parse_format_code((code))
-#         return  (self._formatmap[frmtcode], frmtcode, frmtmask, frmtidx,val)
-        
     def find(self, code):
         
         return self.find_fast(code)
@@ -120,10 +110,3 @@ class FormatUtil():
         if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
             val = val - (1 << bits)  # compute negative value
         return val  
-            
-            
-            
-            
-
-    
-    

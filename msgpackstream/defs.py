@@ -113,25 +113,15 @@ class Template():
     
         
 
-# class EventType(Enum):
-#     
-#     VALUE = 1  # value event
-#     ARRAY_START = 2  # event that indicates start of an array
-#     ARRAY_END = 3  # event that indicates end of an array
-#     MAP_START = 4  # event that indicates start of a map
-#     MAP_END = 5  # event that indicates end of a map
-#     MAP_PROPERTY_NAME = 6  # event that indicates property name
-#     EXT = 7  # event that indicates ext value
-
 class EventType():
 #     
-    VALUE = 1  # value event
-    ARRAY_START = 2  # event that indicates start of an array
-    ARRAY_END = 3  # event that indicates end of an array
-    MAP_START = 4  # event that indicates start of a map
-    MAP_END = 5  # event that indicates end of a map
-    MAP_PROPERTY_NAME = 6  # event that indicates property name
-    EXT = 7  # event that indicates ext value
+    VALUE = 1               # value event
+    ARRAY_START = 2         # event that indicates start of an array
+    ARRAY_END = 3           # event that indicates end of an array
+    MAP_START = 4           # event that indicates start of a map
+    MAP_END = 5             # event that indicates end of a map
+    MAP_PROPERTY_NAME = 6   # event that indicates property name
+    EXT = 7                 # event that indicates ext value
            
            
     

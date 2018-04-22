@@ -13,7 +13,6 @@ class FormatTypeNotAcceptable(Exception):
         Exception.__init__(self, msg)
     
     
-    
 class InvalidStateException(Exception):
     '''
         Exception to InvalidStateException

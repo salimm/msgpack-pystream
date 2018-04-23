@@ -1,8 +1,7 @@
 #include <iostream>
 #include <string>
-#include <stdexcept>
 #include <cstdlib>
-
+#include <stdexcept>
 #include "unpacker.h"
 
 union FloatU{ 
@@ -50,8 +49,8 @@ EventType value_event_type (ParserInfo &pinfo, enum EventType eventtype);
 unsigned int  parse_uint(std::string &txt, int start , int end, bool little_endian);
 int  parse_int(std::string &txt, int start , int end, bool little_endian);
 int  parse_byte(std::string &txt, int start , int end, bool little_endian);
-unsigned long  parse_ulong(std::string &txt, int start , int end, bool little_endian);
-long  parse_long(std::string &txt, int start , int end, bool little_endian);
+unsigned long long  parse_ulong(std::string &txt, int start , int end, bool little_endian);
+long long  parse_long(std::string &txt, int start , int end, bool little_endian);
 /**
 	cop string from byte stream
 */
@@ -68,7 +67,7 @@ PyObject* parse_value(ParserInfo &pinfo,Format ftype, int start, int end);
     The function will buffer what will require extra bytes to be processed.
 */
 
-void do_process_inner(std::string buff, ParserInfo& context, PyObject* deserializers, PyObject* EXT_TYPE, PyObject* EVENT_TYPE);
+void do_process_inner(std::string& buff, ParserInfo& context, PyObject* deserializers, PyObject* EXT_TYPE, PyObject* EVENT_TYPE);
 // void do_process(std::string buff, ParserInfo& context, PyObject* deserializers);
 
 /**
@@ -89,23 +88,27 @@ void list_append(PyObject* list, PyObject* val);
 
 
 
-void do_process(std::string buff, ParserInfo& context, PyObject* deserializers){
+void do_process(std::string& buff, ParserInfo& context, PyObject* deserializers){
+	////std::cout << "====================== de process 1\n";
+	
 	PyObject *module = PyImport_ImportModule("msgpackstream.defs");
     if (!module)
       throw std::runtime_error("can't import ");
+	////std::cout << "====================== de process 2\n";
   	PyObject* EXT_TYPE = PyObject_GetAttrString(module, "ExtType");
   	PyObject* EVENT_TYPE = PyObject_GetAttrString(module, "EventType");
-  	
+	//std::cout << "====================== de process 3\n";
   	do_process_inner(buff, context, deserializers, EXT_TYPE, EVENT_TYPE);
-
+	//std::cout << "====================== de process 4\n";
   	Py_DECREF(EXT_TYPE);
   	Py_DECREF(EVENT_TYPE);
   	Py_DECREF(module);
+	//std::cout << "====================== de process 5\n";
 }
 
 
-void do_process_inner(std::string buff, ParserInfo& context, PyObject* deserializers, PyObject* EXT_TYPE, PyObject* EVENT_TYPE){
-	
+void do_process_inner(std::string &buff, ParserInfo& context, PyObject* deserializers, PyObject* EXT_TYPE, PyObject* EVENT_TYPE){
+	//std::cout << "-------------------------------1\n";
 	Py_XDECREF(context.events);
 
 	// creating the new state
@@ -116,41 +119,51 @@ void do_process_inner(std::string buff, ParserInfo& context, PyObject* deseriali
 	int idx = 0; 
 	long int available = pinfo.memory.length();
 	int advance = 1;
-
+	//std::cout << "-------------------------------2\n";
 	// process input while exists
 	while (available >= advance){
-	// struct Format formattype;
+		//std::cout << "-------------------------------3\n";
+		// struct Format formattype;
 		//expected start of a new segment
 		if (pinfo.scstate <= SC_WAITING_FOR_HEADER){
+			//std::cout << "-------------------------------4\n";
 			advance = 1;	
 			handle_read_header(pinfo, hutil, pinfo.memory[idx], EXT_TYPE, EVENT_TYPE);		
 
 		// the scanner expects to read one or multiple bytes that contain an 
         // integer contain the length of the value to be expected
 		}else if (pinfo.scstate == SC_WAITING_FOR_LENGTH){
+			//std::cout << "-------------------------------5\n";
 			advance = pinfo.state.get_length();
 			// checking if enough bytes are available to read the bytes required to obtain length of value
 			if (available < advance){
+				////std::cout << "-------------------------------6\n";
 				break;
 			}
+			////std::cout << "-------------------------------7\n";
 			handle_read_length(pinfo, hutil, idx, idx + advance, EXT_TYPE, EVENT_TYPE);
 
 		// if the scanner is expecting to parse one or multiple bytes as the value of the segment
 		}else if (pinfo.scstate == SC_WAITING_FOR_VALUE){
+			//std::cout << "-------------------------------8\n";
 			advance = pinfo.state.get_length();
 			// checking if enough bytes are available to read segment value
 			if (available < advance){
+				////std::cout << "-------------------------------8.1\n";
 				break;
 			}
 			handle_read_value(pinfo, idx, idx + advance,deserializers, EXT_TYPE, EVENT_TYPE);
-
+			////std::cout << "-------------------------------8.2\n";
 		// if the scanner is expecting to parse an extension
 		}else if (pinfo.scstate == SC_WAITING_FOR_EXT_TYPE){
+			//std::cout << "-------------------------------9\n";
 			advance= 1;
 			handle_read_ext_type(pinfo, idx, deserializers, EXT_TYPE, EVENT_TYPE);
 		}
+		//std::cout << "-------------------------------10\n";
 		// if a data segment is ended
 		if (pinfo.scstate == SC_SEGMENT_ENDED){
+			//std::cout << "-------------------------------11\n";
 			handle_end_segment(pinfo, EXT_TYPE, EVENT_TYPE);
 		}
 		//proceed with scanning
@@ -158,6 +171,7 @@ void do_process_inner(std::string buff, ParserInfo& context, PyObject* deseriali
 		idx += advance;
 		available -= advance;
 		advance = 1;
+		//std::cout << "-------------------------------12\n";
 	}
 	// setting the return values
 	// finished processing all since it needed extra info
@@ -168,6 +182,7 @@ void do_process_inner(std::string buff, ParserInfo& context, PyObject* deseriali
 	context.parentismap = pinfo.parentismap;
 	context.events = pinfo.events;
 	context.stck = pinfo.stck;
+	//std::cout << "-------------------------------3\n";
 }
 
 
@@ -399,27 +414,51 @@ unsigned int  parse_uint(std::string &txt, int start , int end, bool little_endi
 }
 
 
-unsigned long  parse_ulong(std::string &txt, int start , int end, bool little_endian){
-	unsigned long out = 0;
+unsigned long long parse_ulong(std::string &txt, int start , int end, bool little_endian){
+	////std::cout << "++++++++++++++++++++++1\n";
+	unsigned long long out = 0;
 	if (!little_endian){
-		for (int i = end-1; i >=0 ; i--)	
+		for (int i = end-1; i >=0 ; i--)	{
 			out = (out << 8) | ((unsigned char) txt[i]);
+			////std::cout << "\n";
+			////std::cout << (int)out;					
+			////std::cout << "-";
+			////std::cout << (int)((unsigned char) txt[i]);				
+		}
 	}else{
-		for (int i = start; i < end; i++)
+		for (int i = start; i < end; i++){
 			out = (out << 8) | ((unsigned char) txt[i]);
+			////std::cout << "\n";
+			////std::cout << (int)out;					
+			////std::cout << "-";
+			////std::cout << (int)((unsigned char) txt[i]);					
+		}
 	}	
+	////std::cout << "\n";
+	////std::cout << out;
 	return out;
 }
 
 
-long  parse_long(std::string &txt, int start , int end, bool little_endian){
-	long out = 0;
+long long parse_long(std::string &txt, int start , int end, bool little_endian){
+	long long   out = 0;
 	if (!little_endian){
-		for (int i = end-1; i >=0 ; i--)	
+		for (int i = end-1; i >=0 ; i--){	
 			out = (out << 8) | ((unsigned char) txt[i]);
+			////std::cout << (int)((unsigned char) txt[i]);
+			////std::cout << "\n";
+			////std::cout << out;
+			////std::cout << "\n";
+		}
 	}else{
-		for (int i = start; i < end; i++)
+		////std::cout << "===3\n";
+		for (int i = start; i < end; i++){
 			out = (out << 8) | ((unsigned char) txt[i]);
+			////std::cout << (int)((unsigned char) txt[i]);
+			////std::cout << "\n";
+			////std::cout << out;
+			////std::cout << "\n";
+		}
 	}
 	return out;
 }
@@ -515,11 +554,11 @@ PyObject* parse_value(ParserInfo &pinfo, Format ftype, int start, int end){
         }else if(ftype.idx == INT_32.idx){
         	return Py_BuildValue("i", parse_int(pinfo.memory, start, end,little_endian_flag));
         }else if(ftype.idx <= INT_64.idx){
-        	return Py_BuildValue("l", parse_long(pinfo.memory, start, end,little_endian_flag));
+        	return Py_BuildValue("L", parse_long(pinfo.memory, start, end,little_endian_flag));
         }else if(ftype.idx <= UINT_32.idx){
         	return Py_BuildValue("I",parse_uint(pinfo.memory, start, end,little_endian_flag));
         }else if(ftype.idx <= UINT_64.idx){
-        	return Py_BuildValue("k",parse_ulong(pinfo.memory, start, end,little_endian_flag));
+        	return Py_BuildValue("L",parse_ulong(pinfo.memory, start, end,little_endian_flag));
         }else if(ftype.idx <= UINT_64.idx){
         	return Py_BuildValue("k",parse_uint(pinfo.memory, start, end,little_endian_flag));
         }else if(ftype.idx <= EXT_32.idx){

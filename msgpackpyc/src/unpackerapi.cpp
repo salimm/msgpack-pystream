@@ -15,18 +15,20 @@ PyObject* process(PyObject *self, PyObject *args);
 
 
 PyObject* process(PyObject *self, PyObject *args){
-    
+    std::cout << "++++++++++++++++++++++++++++++++++++++++ process 1\n";
     PyObject* piobj;
     PyObject* deserializers;
     int memsize;
     const char* mem;
-
+	std::cout << "++++++++++++++++++++++++++++++++++++++++ process 2\n";
     if (!PyArg_ParseTuple(args, "s#OO",  &mem, &memsize, &piobj, &deserializers))
         return NULL;
+	std::cout << "++++++++++++++++++++++++++++++++++++++++ process 3\n";
     ParserInfo pinfo = convert_parser_info(piobj);
     std::string memory(mem,memsize);
+	std::cout << "++++++++++++++++++++++++++++++++++++++++ process 4\n";
     do_process(memory, pinfo, deserializers);
-
+	std::cout << "++++++++++++++++++++++++++++++++++++++++ process 5\n";
     return convert_pyobject(pinfo);        
 }
 

@@ -8,5 +8,5 @@
 #include <Python.h>
 
 
-void do_process(std::string buff, ParserInfo &context, PyObject* deserializers);
+void do_process(std::string& buff, ParserInfo &context, PyObject* deserializers);
 	

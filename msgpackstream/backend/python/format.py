@@ -3,7 +3,7 @@ Created on Nov 13, 2017
 
 @author: Salim
 '''
-from msgpackstream.defs import FormatType, TemplateType
+from msgpackstream.defs import FormatType, TemplateType, EventType
 
 
 
@@ -70,14 +70,13 @@ class FormatUtil():
         else:
             return self._formatmap[code];
         
-    def find_fast(self, code):
-        code = ord(code)
+    def find_fast(self, code):        
         frmt = self._formatlookup[code]
         return (frmt, frmt.value.code, frmt.value.mask,frmt.value.idx, self.get_value(code, frmt))
     
     
     def find(self, code):
-        
+        code = ord(code)
         return self.find_fast(code)
         
             
@@ -110,3 +109,25 @@ class FormatUtil():
         if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
             val = val - (1 << bits)  # compute negative value
         return val  
+    
+    
+def print_msgpack_event(event):
+    util = FormatUtil()
+    frmt = util.find_fast(event[1])[0];
+    eventname = "";
+    if(event[0]==EventType.VALUE):
+        eventname = "VALUE";
+    elif(event[0]==EventType.ARRAY_START):
+        eventname = "ARRAY_START";
+    elif(event[0]==EventType.ARRAY_END):
+        eventname = "ARRAY_END";
+    elif(event[0]==EventType.MAP_START):
+        eventname = "MAP_START";
+    elif(event[0]==EventType.MAP_END):
+        eventname = "MAP_END";
+    elif(event[0]==EventType.MAP_PROPERTY_NAME):
+        eventname = "MAP_PROPERTY_NAME";
+    elif(event[0]==EventType.EXT):
+        eventname = "EXT";
+    
+    print("{Event: ("+eventname+", "+str(frmt)+", "+str(event[2])+")}")

@@ -1,8 +1,7 @@
-#include <iostream>
 #include "unpacker.h"
 #include "Event.h"
 #include <Python.h>
-
+#include <iostream>
 
 ParserInfo convert_parser_info( PyObject *args);
 PyObject* convert_pyobject(Event &event);
@@ -14,22 +13,23 @@ PyObject* process(PyObject *self, PyObject *args);
 
 
 
-PyObject* process(PyObject *self, PyObject *args){
-    std::cout << "++++++++++++++++++++++++++++++++++++++++ process 1\n";
+PyObject* process_api(PyObject *self, PyObject *args){ 
+    /*std::cout << "&&&&&&&&&&&&&&& process 1\n";
     PyObject* piobj;
     PyObject* deserializers;
     int memsize;
     const char* mem;
-	std::cout << "++++++++++++++++++++++++++++++++++++++++ process 2\n";
+	std::cout << "++++++++++++++++++++++ process 2\n";
     if (!PyArg_ParseTuple(args, "s#OO",  &mem, &memsize, &piobj, &deserializers))
         return NULL;
-	std::cout << "++++++++++++++++++++++++++++++++++++++++ process 3\n";
+	std::cout << "++++++++++++++++++++++ process 3\n";
     ParserInfo pinfo = convert_parser_info(piobj);
     std::string memory(mem,memsize);
-	std::cout << "++++++++++++++++++++++++++++++++++++++++ process 4\n";
+	
     do_process(memory, pinfo, deserializers);
-	std::cout << "++++++++++++++++++++++++++++++++++++++++ process 5\n";
-    return convert_pyobject(pinfo);        
+	std::cout << "===================  process 5\n";
+    return convert_pyobject(pinfo);        */
+	return NULL;
 }
 
 ParserInfo convert_parser_info( PyObject *piobj){
@@ -94,7 +94,6 @@ PyObject* convert_pyobject(ParserInfo &pinfo){
 }
 
 PyObject* convert_pyobject(Event &event){
-
    PyObject* res=Py_BuildValue("(i,O,O)", event.eventtype, event.format, event.value);    
    return res;
 }
@@ -248,15 +247,12 @@ PyObject * create_eventstream(PyObject *self, PyObject *args){
 
 
 
-
-
-
 PyMODINIT_FUNC
 initmpstream_cunpacker(void)
 {
     static PyMethodDef FindMethods[] = {
         
-        {"process",  process, METH_VARARGS,
+        {"process",  process_api, METH_VARARGS,
             "processes a segment of instream..."}, 
             {"create_eventstream",  create_eventstream, METH_VARARGS,
             "creates a iterator over the stream unpacker functionality based on input stream"},

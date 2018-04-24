@@ -81,20 +81,24 @@ PyObject* create_event_ext(enum EventType eventtype, ExtType exttype, PyObject* 
 	deserialize using custom deserializer
 */
 PyObject* deserialize(PyObject* deserializers,PyObject* exttype ,int extcode, PyObject* buff, Py_ssize_t start, Py_ssize_t end );
-
+void do_processx(std::string& buff, ParserInfo& context, PyObject* deserializers);
 void list_append(PyObject* list, PyObject* val);
 
 
-
-
-
 void do_process(std::string& buff, ParserInfo& context, PyObject* deserializers){
-	////std::cout << "====================== de process 1\n";
+	std::cout << "====================== new outter process 1\n";	
+	do_processx(buff, context, deserializers);
+	std::cout << "====================== new outter process 2\n";	
+}
+
+
+void do_processx(std::string& buff, ParserInfo& context, PyObject* deserializers){
+	//std::cout << "====================== de process 1\n";	
 	
 	PyObject *module = PyImport_ImportModule("msgpackstream.defs");
     if (!module)
       throw std::runtime_error("can't import ");
-	////std::cout << "====================== de process 2\n";
+	//std::cout << "====================== de process 2\n";
   	PyObject* EXT_TYPE = PyObject_GetAttrString(module, "ExtType");
   	PyObject* EVENT_TYPE = PyObject_GetAttrString(module, "EventType");
 	//std::cout << "====================== de process 3\n";
@@ -586,6 +590,8 @@ PyObject* create_event(enum EventType eventtype, struct Format format , PyObject
 	PyTuple_SET_ITEM(event,0,eventype_py);
 	PyTuple_SET_ITEM(event,1,convert_type(format));
  	PyTuple_SET_ITEM(event,2,value);
+	
+	//PyObject_Print(event, stdout,0);
  	
  	return event;
  }
@@ -600,7 +606,8 @@ PyObject* create_event(enum EventType eventtype, struct Format format, PyObject*
  	
  	Py_INCREF(Py_None);
  	PyTuple_SET_ITEM(event,2,Py_None);
-
+	
+	//PyObject_Print(event, stdout,0);
  	return event;
  }
 
@@ -612,6 +619,8 @@ PyObject* create_event(enum EventType eventtype, struct Format format, PyObject*
 	PyObject* exttype_py = convert_type(exttype, EXT_TYPE);
  	PyTuple_SET_ITEM(event,1,exttype_py);
  	PyTuple_SET_ITEM(event,2,deserialize(deserializers, exttype_py, exttype.extcode, value, 0, PyString_Size(value)));
+	
+	//PyObject_Print(event, stdout,0);
 
  	return event;
  } 
@@ -625,6 +634,8 @@ PyObject* create_event_ext(enum EventType eventtype, ExtType exttype, PyObject* 
  	PyTuple_SET_ITEM(event,1,convert_type(exttype, EXT_TYPE));
  	Py_INCREF(Py_None);
  	PyTuple_SET_ITEM(event,2,Py_None);
+	
+	//PyObject_Print(event, stdout,0);
 
  	return event;
  

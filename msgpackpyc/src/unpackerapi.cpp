@@ -154,7 +154,6 @@ static void print_pointers(cunpacker_EventStream *p){
 }
 
 static void set_info_fields(cunpacker_EventStream *p, PyObject* values){
-    print_pointers(p);
     Py_DECREF(p->stack);
     Py_DECREF(p->events);
     Py_DECREF(p->memory);
@@ -163,7 +162,6 @@ static void set_info_fields(cunpacker_EventStream *p, PyObject* values){
     Py_DECREF(p->waitingforprop);
     Py_DECREF(p->parentismap);
     
-    print_pointers(p);
     // set new values
     p->stack = PyTuple_GetItem(values,0);
     p->memory = PyTuple_GetItem(values,1);
@@ -173,7 +171,6 @@ static void set_info_fields(cunpacker_EventStream *p, PyObject* values){
     p->waitingforprop = PyTuple_GetItem(values,5);
     p->parentismap = PyTuple_GetItem(values,6);
 
-    print_pointers(p);
     Py_INCREF(p->stack);
     Py_INCREF(p->events);
     Py_INCREF(p->memory);
@@ -205,11 +202,8 @@ static PyObject* cunpacker_EventStream_next(PyObject *self){
                 PyErr_SetNone(PyExc_StopIteration);
                 return NULL;
             }    
-            print_pointers(p);
             std::string memory = std::string(PyString_AsString(bytes_read),PyString_Size(bytes_read));            
-            print_pointers(p);
             PyObject* piobj = pack_process_info(p);
-            print_pointers(p);
             PyObject* result = process_api_inner(memory, piobj, p->parsers);
             Py_DECREF(piobj);
             set_info_fields(p, result);

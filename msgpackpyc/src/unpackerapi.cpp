@@ -12,25 +12,29 @@ ParserState parse_state(PyObject* obj, HeaderUtil &hutil);
 PyObject* process(PyObject *self, PyObject *args);
 
 
+PyObject* process_api_inner(std::string memory, PyObject* piobj, PyObject* deserializers){ 
+    Py_INCREF(piobj);
+    Py_INCREF(deserializers);
+    ParserInfo pinfo = convert_parser_info(piobj);
+    do_process(memory, pinfo, deserializers);
+    PyObject* result = convert_pyobject(pinfo); 
+    Py_DECREF(piobj);
+    Py_DECREF(deserializers);
+    return result;
+}
 
 PyObject* process_api(PyObject *self, PyObject *args){ 
-    /*std::cout << "&&&&&&&&&&&&&&& process 1\n";
     PyObject* piobj;
     PyObject* deserializers;
     int memsize;
     const char* mem;
-	std::cout << "++++++++++++++++++++++ process 2\n";
     if (!PyArg_ParseTuple(args, "s#OO",  &mem, &memsize, &piobj, &deserializers))
         return NULL;
-	std::cout << "++++++++++++++++++++++ process 3\n";
     ParserInfo pinfo = convert_parser_info(piobj);
-    std::string memory(mem,memsize);
-	
-    do_process(memory, pinfo, deserializers);
-	std::cout << "===================  process 5\n";
-    return convert_pyobject(pinfo);        */
-	return NULL;
+    std::string memory(mem,memsize);    
+    return process_api_inner(memory, piobj, deserializers);
 }
+
 
 ParserInfo convert_parser_info( PyObject *piobj){
     Py_INCREF(piobj);
@@ -74,8 +78,9 @@ ParserState parse_state(PyObject* obj, HeaderUtil &hutil){
     return ParserState(frmt, tmpl, length, remaining, extcode);
 }
 
-PyObject* convert_pyobject(ParserInfo &pinfo){
 
+PyObject* convert_pyobject(ParserInfo &pinfo){    
+    
     PyObject* stck = PyList_New(pinfo.stck.size());        
     int idx = 0;
     while(pinfo.stck.size()!=0){
@@ -93,15 +98,16 @@ PyObject* convert_pyobject(ParserInfo &pinfo){
     return out;
 }
 
+
 PyObject* convert_pyobject(Event &event){
    PyObject* res=Py_BuildValue("(i,O,O)", event.eventtype, event.format, event.value);    
    return res;
 }
 
+
 PyObject* convert_pyobject(ParserState &state){
     return Py_BuildValue("(i,i,i,i,i)",state.formattype.code, state.formattype.code, state.get_length(), state.remaining, state.extcode);
 }
-
 
 
 
@@ -119,60 +125,122 @@ typedef struct {
     int buffersize;
     long int idx;
     long int rem;
-    ParserInfo* pinfo;
+    // input output of the original unpacker
+    PyObject* events;
+    PyObject* memory;
+    PyObject* scstate;
+    PyObject* state;
+    PyObject* stack;
+    PyObject* waitingforprop;
+    PyObject* parentismap;
 } cunpacker_EventStream;
+
 
 static PyObject* cunpacker_EventStream_iter(PyObject *self){
     Py_INCREF(self);    
     return self;
 }
 
+static void print_pointers(cunpacker_EventStream *p){
+    std::cout << "\n ++++ stack: "<< p->stack->ob_refcnt <<"\n";
+    std::cout << "\n ++++ events: "<< p->events->ob_refcnt <<"\n";
+    std::cout << "\n ++++ memory: "<< p->memory->ob_refcnt <<"\n";
+    std::cout << "\n ++++ scstate: "<< p->scstate->ob_refcnt <<"\n";
+    std::cout << "\n ++++ state: "<< p->state->ob_refcnt <<"\n";
+    std::cout << "\n ++++ waitingforprop: "<< p->waitingforprop->ob_refcnt <<"\n";
+    std::cout << "\n ++++ parentismap: "<< p->parentismap->ob_refcnt <<"\n";
+    std::cout << "\n ++++ parsers: "<< p->parsers->ob_refcnt <<"\n";
+    std::cout << "\n ++++ instream: "<< p->instream->ob_refcnt <<"\n";
+}
+
+static void set_info_fields(cunpacker_EventStream *p, PyObject* values){
+    print_pointers(p);
+    Py_DECREF(p->stack);
+    Py_DECREF(p->events);
+    Py_DECREF(p->memory);
+    Py_DECREF(p->scstate);
+    Py_DECREF(p->state);
+    Py_DECREF(p->waitingforprop);
+    Py_DECREF(p->parentismap);
+    
+    print_pointers(p);
+    // set new values
+    p->stack = PyTuple_GetItem(values,0);
+    p->memory = PyTuple_GetItem(values,1);
+    p->scstate = PyTuple_GetItem(values,2);
+    p->state = PyTuple_GetItem(values,3);
+    p->events = PyTuple_GetItem(values,4);
+    p->waitingforprop = PyTuple_GetItem(values,5);
+    p->parentismap = PyTuple_GetItem(values,6);
+
+    print_pointers(p);
+    Py_INCREF(p->stack);
+    Py_INCREF(p->events);
+    Py_INCREF(p->memory);
+    Py_INCREF(p->scstate);
+    Py_INCREF(p->state);
+    Py_INCREF(p->waitingforprop);
+    Py_INCREF(p->parentismap);
+}
+
+static PyObject* pack_process_info(cunpacker_EventStream* p){
+    return PyTuple_Pack(8,p->stack, p->memory, p->scstate, p->state, p->events, p->waitingforprop, p->parentismap, PyInt_FromLong(PyString_Size(p->memory)));
+}
 
 static PyObject* cunpacker_EventStream_next(PyObject *self){
     cunpacker_EventStream *p = (cunpacker_EventStream *)self;
-    if(p->idx >= p->rem){
-        Py_XDECREF(p->pinfo->events);
+    if(p->idx >= p->rem){        
         p->rem = 0;
         p->idx = 0;
-
-        PyObject* method =PyString_FromString((char*)"read");
         while(p->rem==0){
-            
             PyObject* bfsize = PyInt_FromLong(p->buffersize);
-            PyObject* bytes_read = PyObject_CallMethodObjArgs(p->instream,method,bfsize ,NULL); // new ref
+            PyObject* method =PyString_FromString("read");       
+            PyObject* bytes_read = PyObject_CallMethodObjArgs(p->instream,method,bfsize ,NULL); // new ref            
+            Py_DECREF(method);
             Py_DECREF(bfsize);
-            if(PyString_Size(bytes_read) ==0){
+
+            if(bytes_read==NULL || PyString_Size(bytes_read) ==0){
                 // Raising of standard StopIteration exception with empty value. 
-                Py_DECREF(method);
-                Py_DECREF(bytes_read);                
+                Py_XDECREF(bytes_read);                  
                 PyErr_SetNone(PyExc_StopIteration);
                 return NULL;
             }    
-            std::string memory(PyString_AsString(bytes_read),PyString_Size(bytes_read));
-            do_process(memory, *p->pinfo, p->parsers);            
-            p->rem = PyList_Size(p->pinfo->events);
+            print_pointers(p);
+            std::string memory = std::string(PyString_AsString(bytes_read),PyString_Size(bytes_read));            
+            print_pointers(p);
+            PyObject* piobj = pack_process_info(p);
+            print_pointers(p);
+            PyObject* result = process_api_inner(memory, piobj, p->parsers);
+            Py_DECREF(piobj);
+            set_info_fields(p, result);
+            Py_DECREF(result);
+
+            p->rem = PyList_Size(p->events);
             Py_DECREF(bytes_read);
         }
-
-        Py_DECREF(method);
     }
-    PyObject* event = PyList_GetItem(p->pinfo->events, p->idx);
+    PyObject* event = PyList_GetItem(p->events, p->idx);
     Py_INCREF(event);
     p->idx = p->idx +1;
+
     return event;        
 }
 
 
-static void
-eventstream_dealloc(PyObject* self)
-{
+static void eventstream_dealloc(PyObject* self){
     /* We need XDECREF here because when the generator is exhausted,
      * rgstate->sequence is cleared with Py_CLEAR which sets it to NULL.
     */
     cunpacker_EventStream *p = (cunpacker_EventStream *)self;
     Py_XDECREF(p->parsers);
     Py_XDECREF(p->instream);
-    delete p->pinfo;
+    Py_XDECREF(p->stack);
+    Py_XDECREF(p->events);
+    Py_XDECREF(p->memory);
+    Py_XDECREF(p->scstate);
+    Py_XDECREF(p->state);
+    Py_XDECREF(p->waitingforprop);
+    Py_XDECREF(p->parentismap);
 }
 
 // eventstream iterator type
@@ -227,20 +295,27 @@ PyObject * create_eventstream(PyObject *self, PyObject *args){
         Py_DECREF(p);
         return NULL;
     }
+
+
     Py_INCREF(instream);
     Py_INCREF(parsers);
     p->instream = instream;
-    p->pinfo = new ParserInfo();
     p->parsers = parsers;
     p->buffersize = buffersize;
     p->idx = 0;
     p->rem = 0;
+    // unpacker objects
+    p->events = PyList_New(0);
+    p->memory = PyString_FromString("");
+    p->scstate = PyInt_FromLong(1);
+    Py_INCREF(Py_None);
+    p->state = Py_None;
+    p->stack = PyList_New(0);
+    p->waitingforprop = PyInt_FromLong(0);
+    p->parentismap = PyInt_FromLong(0);
 
     return (PyObject *)p;
 }
-
-
-
 
 
 

@@ -68,7 +68,7 @@ PyObject* parse_value(ParserInfo &pinfo,Format ftype, int start, int end);
 */
 
 void do_process_inner(std::string& buff, ParserInfo& context, PyObject* deserializers, PyObject* EXT_TYPE, PyObject* EVENT_TYPE);
-// void do_process(std::string buff, ParserInfo& context, PyObject* deserializers);
+void do_process(std::string& buff, ParserInfo& context, PyObject* deserializers);
 
 /**
 	create event function
@@ -81,38 +81,25 @@ PyObject* create_event_ext(enum EventType eventtype, ExtType exttype, PyObject* 
 	deserialize using custom deserializer
 */
 PyObject* deserialize(PyObject* deserializers,PyObject* exttype ,int extcode, PyObject* buff, Py_ssize_t start, Py_ssize_t end );
-void do_processx(std::string& buff, ParserInfo& context, PyObject* deserializers);
+
 void list_append(PyObject* list, PyObject* val);
 
 
+
 void do_process(std::string& buff, ParserInfo& context, PyObject* deserializers){
-	std::cout << "====================== new outter process 1\n";	
-	do_processx(buff, context, deserializers);
-	std::cout << "====================== new outter process 2\n";	
-}
-
-
-void do_processx(std::string& buff, ParserInfo& context, PyObject* deserializers){
-	//std::cout << "====================== de process 1\n";	
-	
 	PyObject *module = PyImport_ImportModule("msgpackstream.defs");
     if (!module)
       throw std::runtime_error("can't import ");
-	//std::cout << "====================== de process 2\n";
   	PyObject* EXT_TYPE = PyObject_GetAttrString(module, "ExtType");
   	PyObject* EVENT_TYPE = PyObject_GetAttrString(module, "EventType");
-	//std::cout << "====================== de process 3\n";
   	do_process_inner(buff, context, deserializers, EXT_TYPE, EVENT_TYPE);
-	//std::cout << "====================== de process 4\n";
   	Py_DECREF(EXT_TYPE);
   	Py_DECREF(EVENT_TYPE);
   	Py_DECREF(module);
-	//std::cout << "====================== de process 5\n";
 }
 
 
 void do_process_inner(std::string &buff, ParserInfo& context, PyObject* deserializers, PyObject* EXT_TYPE, PyObject* EVENT_TYPE){
-	//std::cout << "-------------------------------1\n";
 	Py_XDECREF(context.events);
 
 	// creating the new state
@@ -123,51 +110,36 @@ void do_process_inner(std::string &buff, ParserInfo& context, PyObject* deserial
 	int idx = 0; 
 	long int available = pinfo.memory.length();
 	int advance = 1;
-	//std::cout << "-------------------------------2\n";
 	// process input while exists
 	while (available >= advance){
-		//std::cout << "-------------------------------3\n";
-		// struct Format formattype;
 		//expected start of a new segment
 		if (pinfo.scstate <= SC_WAITING_FOR_HEADER){
-			//std::cout << "-------------------------------4\n";
 			advance = 1;	
 			handle_read_header(pinfo, hutil, pinfo.memory[idx], EXT_TYPE, EVENT_TYPE);		
 
 		// the scanner expects to read one or multiple bytes that contain an 
         // integer contain the length of the value to be expected
 		}else if (pinfo.scstate == SC_WAITING_FOR_LENGTH){
-			//std::cout << "-------------------------------5\n";
 			advance = pinfo.state.get_length();
-			// checking if enough bytes are available to read the bytes required to obtain length of value
 			if (available < advance){
-				////std::cout << "-------------------------------6\n";
 				break;
 			}
-			////std::cout << "-------------------------------7\n";
 			handle_read_length(pinfo, hutil, idx, idx + advance, EXT_TYPE, EVENT_TYPE);
 
 		// if the scanner is expecting to parse one or multiple bytes as the value of the segment
 		}else if (pinfo.scstate == SC_WAITING_FOR_VALUE){
-			//std::cout << "-------------------------------8\n";
 			advance = pinfo.state.get_length();
-			// checking if enough bytes are available to read segment value
 			if (available < advance){
-				////std::cout << "-------------------------------8.1\n";
 				break;
 			}
 			handle_read_value(pinfo, idx, idx + advance,deserializers, EXT_TYPE, EVENT_TYPE);
-			////std::cout << "-------------------------------8.2\n";
 		// if the scanner is expecting to parse an extension
 		}else if (pinfo.scstate == SC_WAITING_FOR_EXT_TYPE){
-			//std::cout << "-------------------------------9\n";
 			advance= 1;
 			handle_read_ext_type(pinfo, idx, deserializers, EXT_TYPE, EVENT_TYPE);
 		}
-		//std::cout << "-------------------------------10\n";
 		// if a data segment is ended
 		if (pinfo.scstate == SC_SEGMENT_ENDED){
-			//std::cout << "-------------------------------11\n";
 			handle_end_segment(pinfo, EXT_TYPE, EVENT_TYPE);
 		}
 		//proceed with scanning
@@ -175,7 +147,6 @@ void do_process_inner(std::string &buff, ParserInfo& context, PyObject* deserial
 		idx += advance;
 		available -= advance;
 		advance = 1;
-		//std::cout << "-------------------------------12\n";
 	}
 	// setting the return values
 	// finished processing all since it needed extra info
@@ -186,7 +157,6 @@ void do_process_inner(std::string &buff, ParserInfo& context, PyObject* deserial
 	context.parentismap = pinfo.parentismap;
 	context.events = pinfo.events;
 	context.stck = pinfo.stck;
-	//std::cout << "-------------------------------3\n";
 }
 
 
@@ -231,7 +201,6 @@ void handle_read_header(ParserInfo &pinfo, HeaderUtil &hutil, const char header,
 				pinfo.stck.push(pinfo.state);
 				pinfo.scstate = SC_WAITING_FOR_HEADER;
 			}
-
 		}else{
 			if(seglength == 0){
 				list_append(pinfo.events, create_event(value_event_type(pinfo, ET_VALUE),frmt, hutil.empty_value(frmt),EXT_TYPE, EVENT_TYPE));
@@ -252,8 +221,6 @@ void handle_read_header(ParserInfo &pinfo, HeaderUtil &hutil, const char header,
 	}else{
 		throw std::runtime_error("Invalid segment type!!");
 	}
-
-
 }
 
 
@@ -264,7 +231,7 @@ void handle_read_length(ParserInfo &pinfo, HeaderUtil &hutil, int start, int end
 	if (pinfo.state.templatetype.valuetype == VALUE_NESTED){
 		// add start nested event
 		list_append(pinfo.events, create_event(pinfo.state.templatetype.startevent,pinfo.state.formattype,EXT_TYPE, EVENT_TYPE));
-		// check seglentgh
+		// check seg length
 		if (seglength == 0){
 			pinfo.scstate = SC_SEGMENT_ENDED;
 		}else{
@@ -419,27 +386,16 @@ unsigned int  parse_uint(std::string &txt, int start , int end, bool little_endi
 
 
 unsigned long long parse_ulong(std::string &txt, int start , int end, bool little_endian){
-	////std::cout << "++++++++++++++++++++++1\n";
 	unsigned long long out = 0;
 	if (!little_endian){
 		for (int i = end-1; i >=0 ; i--)	{
 			out = (out << 8) | ((unsigned char) txt[i]);
-			////std::cout << "\n";
-			////std::cout << (int)out;					
-			////std::cout << "-";
-			////std::cout << (int)((unsigned char) txt[i]);				
 		}
 	}else{
 		for (int i = start; i < end; i++){
 			out = (out << 8) | ((unsigned char) txt[i]);
-			////std::cout << "\n";
-			////std::cout << (int)out;					
-			////std::cout << "-";
-			////std::cout << (int)((unsigned char) txt[i]);					
 		}
 	}	
-	////std::cout << "\n";
-	////std::cout << out;
 	return out;
 }
 
@@ -448,20 +404,11 @@ long long parse_long(std::string &txt, int start , int end, bool little_endian){
 	long long   out = 0;
 	if (!little_endian){
 		for (int i = end-1; i >=0 ; i--){	
-			out = (out << 8) | ((unsigned char) txt[i]);
-			////std::cout << (int)((unsigned char) txt[i]);
-			////std::cout << "\n";
-			////std::cout << out;
-			////std::cout << "\n";
+			out = (out << 8) | ((unsigned char) txt[i]);;
 		}
 	}else{
-		////std::cout << "===3\n";
 		for (int i = start; i < end; i++){
 			out = (out << 8) | ((unsigned char) txt[i]);
-			////std::cout << (int)((unsigned char) txt[i]);
-			////std::cout << "\n";
-			////std::cout << out;
-			////std::cout << "\n";
 		}
 	}
 	return out;
@@ -583,6 +530,7 @@ PyObject* convert_type(ExtType exttype, PyObject* EXT_TYPE){
 }
 
 
+
 PyObject* create_event(enum EventType eventtype, struct Format format , PyObject* value, PyObject* EXT_TYPE, PyObject* EVENT_TYPE){
 	PyObject* event = PyTuple_New(3);
 
@@ -591,8 +539,6 @@ PyObject* create_event(enum EventType eventtype, struct Format format , PyObject
 	PyTuple_SET_ITEM(event,1,convert_type(format));
  	PyTuple_SET_ITEM(event,2,value);
 	
-	//PyObject_Print(event, stdout,0);
- 	
  	return event;
  }
 
@@ -607,7 +553,6 @@ PyObject* create_event(enum EventType eventtype, struct Format format, PyObject*
  	Py_INCREF(Py_None);
  	PyTuple_SET_ITEM(event,2,Py_None);
 	
-	//PyObject_Print(event, stdout,0);
  	return event;
  }
 
@@ -620,8 +565,6 @@ PyObject* create_event(enum EventType eventtype, struct Format format, PyObject*
  	PyTuple_SET_ITEM(event,1,exttype_py);
  	PyTuple_SET_ITEM(event,2,deserialize(deserializers, exttype_py, exttype.extcode, value, 0, PyString_Size(value)));
 	
-	//PyObject_Print(event, stdout,0);
-
  	return event;
  } 
 
@@ -630,15 +573,10 @@ PyObject* create_event_ext(enum EventType eventtype, ExtType exttype, PyObject* 
 	PyObject* event = PyTuple_New(3);
  	PyObject* eventype_py = PyInt_FromLong(eventtype);
  	PyTuple_SET_ITEM(event,0,eventype_py);
-	// PyTuple_SET_ITEM(event,0,PyObject_CallFunctionObjArgs(EVENT_TYPE,eventype_py, NULL));
  	PyTuple_SET_ITEM(event,1,convert_type(exttype, EXT_TYPE));
  	Py_INCREF(Py_None);
  	PyTuple_SET_ITEM(event,2,Py_None);
-	
-	//PyObject_Print(event, stdout,0);
-
  	return event;
- 
 }
 
 
@@ -651,10 +589,10 @@ PyObject* deserialize(PyObject* deserializers,PyObject* exttype ,int extcode, Py
 	PyObject* endidx= PyInt_FromLong(end);
 	PyObject* method = PyString_FromString("deserialize");
 	PyObject* val = PyObject_CallMethodObjArgs(deserializer, method, exttype, buff,  startidx, endidx, NULL );
+	
 	Py_DECREF(startidx);
 	Py_DECREF(endidx);
 	Py_DECREF(method);
-
 	return val;
 }
 

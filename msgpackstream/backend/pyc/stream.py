@@ -70,7 +70,39 @@ def UnpackerIterator(instream, buffersize=5000, parsers=[]):
     tsparser = TimestampParser()
     deserializers[tsparser.handled_extcode()] = tsparser;    
     return  create_eventstream(instream, buffersize, deserializers)
-        
+
+# class UnpackerIterator(object):
+#     
+#     def __init__(self, instream, buffersize=5000, parsers=[]):
+#         self._instream = instream
+#         self._unpacker = StreamUnpacker()
+#         for parser in parsers:
+#             self._unpacker.register(parser)
+#         self._buffersize = buffersize
+#         self._events = []
+#         self._idx = 0
+#         
+#     
+#     def __iter__(self):
+#         return self
+# 
+#     def __next__(self):        
+#         if self._idx >= len(self._events):
+#             self._events = []
+#             while len(self._events) is 0:
+#                 self._idx = 0
+#                 bytes_read = self._instream.read(self._buffersize)
+#                 if not bytes_read:
+#                     raise StopIteration()
+#                 self._unpacker.process(bytes_read)
+#                 self._events = self._unpacker.generate_events()
+#         event = self._events[self._idx]
+#         self._idx = self._idx + 1
+#         return event
+#         
+#         
+# 
+#     next = __next__  # Python 2 
     
 
 def unpack(instream, buffersize=5000, parsers=[]):

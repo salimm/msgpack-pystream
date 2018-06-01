@@ -17,8 +17,11 @@ PyObject* process_api_inner(std::string memory, PyObject* piobj, PyObject* deser
     Py_INCREF(deserializers);
     ParserInfo pinfo = convert_parser_info(piobj);
     do_process(memory, pinfo, deserializers);
+    
     PyObject* result = convert_pyobject(pinfo); 
-    Py_DECREF(piobj);
+    Py_DECREF(pinfo.events);
+        
+    Py_DECREF(piobj);  
     Py_DECREF(deserializers);
     return result;
 }
@@ -36,7 +39,7 @@ PyObject* process_api(PyObject *self, PyObject *args){
 }
 
 
-ParserInfo convert_parser_info( PyObject *piobj){
+ParserInfo convert_parser_info( PyObject *piobj){    
     Py_INCREF(piobj);
 
     HeaderUtil hutil;
@@ -92,17 +95,14 @@ PyObject* convert_pyobject(ParserInfo &pinfo){
     PyObject* state =  convert_pyobject(pinfo.state);
 
     PyObject* out = Py_BuildValue("(O,s#,i,O,O,i,i)", stck, pinfo.memory.c_str(), pinfo.memory.size(), pinfo.scstate, state, pinfo.events, pinfo.waitingforprop, pinfo.parentismap);
+    
     Py_DECREF(stck);
     Py_DECREF(state);
+
 
     return out;
 }
 
-
-PyObject* convert_pyobject(Event &event){
-   PyObject* res=Py_BuildValue("(i,O,O)", event.eventtype, event.format, event.value);    
-   return res;
-}
 
 
 PyObject* convert_pyobject(ParserState &state){
@@ -125,7 +125,7 @@ typedef struct {
     int buffersize;
     long int idx;
     long int rem;
-    // input output of the original unpacker
+    // // input output of the original unpacker
     PyObject* events;
     PyObject* memory;
     PyObject* scstate;
@@ -137,7 +137,7 @@ typedef struct {
 
 
 static PyObject* cunpacker_EventStream_iter(PyObject *self){
-    Py_INCREF(self);    
+    Py_INCREF(self); 
     return self;
 }
 
@@ -182,42 +182,44 @@ static void set_info_fields(cunpacker_EventStream *p, PyObject* values){
 
 static PyObject* pack_process_info(cunpacker_EventStream* p){
     return PyTuple_Pack(8,p->stack, p->memory, p->scstate, p->state, p->events, p->waitingforprop, p->parentismap, PyInt_FromLong(PyString_Size(p->memory)));
+    // return NULL;
 }
 
 static PyObject* cunpacker_EventStream_next(PyObject *self){
+    
     cunpacker_EventStream *p = (cunpacker_EventStream *)self;
-    if(p->idx >= p->rem){        
+    if(p->idx >= p->rem){
         p->rem = 0;
         p->idx = 0;
         while(p->rem==0){
             PyObject* bfsize = PyInt_FromLong(p->buffersize);
-            PyObject* method =PyString_FromString("read");       
-            PyObject* bytes_read = PyObject_CallMethodObjArgs(p->instream,method,bfsize ,NULL); // new ref            
+            PyObject* method = PyString_FromString("read");
+            PyObject* bytes_read = PyObject_CallMethodObjArgs(p->instream,method,bfsize ,NULL); // new ref
             Py_DECREF(method);
             Py_DECREF(bfsize);
 
             if(bytes_read==NULL || PyString_Size(bytes_read) ==0){
                 // Raising of standard StopIteration exception with empty value. 
-                Py_XDECREF(bytes_read);                  
+                Py_XDECREF(bytes_read);
                 PyErr_SetNone(PyExc_StopIteration);
                 return NULL;
             }    
-            std::string memory = std::string(PyString_AsString(bytes_read),PyString_Size(bytes_read));            
+            std::string memory = std::string(PyString_AsString(bytes_read),PyString_Size(bytes_read));
             PyObject* piobj = pack_process_info(p);
             PyObject* result = process_api_inner(memory, piobj, p->parsers);
             Py_DECREF(piobj);
             set_info_fields(p, result);
             Py_DECREF(result);
-
             p->rem = PyList_Size(p->events);
             Py_DECREF(bytes_read);
         }
     }
     PyObject* event = PyList_GetItem(p->events, p->idx);
+    
     Py_INCREF(event);
     p->idx = p->idx +1;
 
-    return event;        
+    return event;
 }
 
 
@@ -273,27 +275,27 @@ static PyTypeObject cunpacker_EventStreamType = {
 
 
 PyObject * create_eventstream(PyObject *self, PyObject *args){
-  
-      PyObject* instream;
-      PyObject* parsers;
-      int buffersize;
 
-      if (!PyArg_ParseTuple(args, "OiO", &instream, &buffersize, &parsers))  return NULL;
-      
+    PyObject* instream;
+    PyObject* parsers;
+    int buffersize;
+
+    if (!PyArg_ParseTuple(args, "OiO", &instream, &buffersize, &parsers))  return NULL;
+
     cunpacker_EventStream *p;
     p = PyObject_New(cunpacker_EventStream, &cunpacker_EventStreamType);
     if (!p) return NULL;
 
-    
+
     if (!PyObject_Init((PyObject *)p, &cunpacker_EventStreamType)) {
         Py_DECREF(p);
         return NULL;
     }
 
 
-    Py_INCREF(instream);
-    Py_INCREF(parsers);
-    p->instream = instream;
+    Py_INCREF(instream); // increasing reference because PyArg_ParseTuple doesn't increase it
+    Py_INCREF(parsers); // increasing reference count because PyArg_ParseTuple doesn't increase it
+    p->instream = instream; 
     p->parsers = parsers;
     p->buffersize = buffersize;
     p->idx = 0;
@@ -342,7 +344,6 @@ main(int argc, char *argv[])
     Py_Initialize();
 
     /* Add a static module */
-    initmpstream_cunpacker();         
+    initmpstream_cunpacker();
     
 }
-
